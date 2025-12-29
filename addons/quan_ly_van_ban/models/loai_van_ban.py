@@ -11,3 +11,7 @@ class LoaiVanBan(models.Model):
     ma_loai_van_ban = fields.Char("Số hiệu văn bản", required=True)
     ten_loai_van_ban = fields.Char("Tên văn bản", required=True)
 
+    _sql_constraints = [
+        ('ma_loai_van_ban_unique', 'unique(ma_loai_van_ban)', 'Mã loại văn bản phải là duy nhất')
+    ]
+

@@ -2,20 +2,20 @@
 # from odoo import http
 
 
-# class NhanSu(http.Controller):
-#     @http.route('/nhan_su/nhan_su', auth='public')
+# class QuanLyVanBan(http.Controller):
+#     @http.route('/quan_ly_van_ban/quan_ly_van_ban', auth='public')
 #     def index(self, **kw):
 #         return "Hello, world"
 
-#     @http.route('/nhan_su/nhan_su/objects', auth='public')
+#     @http.route('/quan_ly_van_ban/quan_ly_van_ban/objects', auth='public')
 #     def list(self, **kw):
-#         return http.request.render('nhan_su.listing', {
-#             'root': '/nhan_su/nhan_su',
-#             'objects': http.request.env['nhan_su.nhan_su'].search([]),
+#         return http.request.render('quan_ly_van_ban.listing', {
+#             'root': '/quan_ly_van_ban/quan_ly_van_ban',
+#             'objects': http.request.env['quan_ly_van_ban.quan_ly_van_ban'].search([]),
 #         })
 
-#     @http.route('/nhan_su/nhan_su/objects/<model("nhan_su.nhan_su"):obj>', auth='public')
+#     @http.route('/quan_ly_van_ban/quan_ly_van_ban/objects/<model("quan_ly_van_ban.quan_ly_van_ban"):obj>', auth='public')
 #     def object(self, obj, **kw):
-#         return http.request.render('nhan_su.object', {
+#         return http.request.render('quan_ly_van_ban.object', {
 #             'object': obj
 #         })

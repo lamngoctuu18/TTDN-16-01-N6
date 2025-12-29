@@ -21,7 +21,7 @@
         <menuitem name="Danh mục loại văn bản" 
             id="menu_loai_van_ban" 
             parent="menu_root" 
-            sequence="2"
+            sequence="3"
             action="action_loai_van_ban"
         />
     </data>
