@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Tree View -->
+        <record id="view_dnu_maintenance_schedule_tree" model="ir.ui.view">
+            <field name="name">dnu.maintenance.schedule.tree</field>
+            <field name="model">dnu.maintenance.schedule</field>
+            <field name="arch" type="xml">
+                <tree string="Lịch bảo trì định kỳ">
+                    <field name="name"/>
+                    <field name="target_type"/>
+                    <field name="asset_id"/>
+                    <field name="room_id"/>
+                    <field name="frequency_interval"/>
+                    <field name="frequency_type"/>
+                    <field name="next_date"/>
+                    <field name="last_maintenance_date"/>
+                    <field name="assigned_tech_id"/>
+                    <field name="state" widget="badge" decoration-success="state=='active'" decoration-warning="state=='paused'"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_dnu_maintenance_schedule_form" model="ir.ui.view">
+            <field name="name">dnu.maintenance.schedule.form</field>
+            <field name="model">dnu.maintenance.schedule</field>
+            <field name="arch" type="xml">
+                <form string="Lịch bảo trì định kỳ">
+                    <header>
+                        <button name="action_create_maintenance" string="Tạo phiếu bảo trì ngay" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'active')]}"/>
+                        <button name="action_pause" string="Tạm dừng" type="object" attrs="{'invisible': [('state', '!=', 'active')]}"/>
+                        <button name="action_resume" string="Tiếp tục" type="object" class="btn-success" attrs="{'invisible': [('state', '!=', 'paused')]}"/>
+                        <button name="action_stop" string="Dừng hẳn" type="object" class="btn-danger" attrs="{'invisible': [('state', '=', 'stopped')]}"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_maintenances" type="object" class="oe_stat_button" icon="fa-wrench">
+                                <field name="maintenance_count" widget="statinfo" string="Lần bảo trì"/>
+                            </button>
+                        </div>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Tên lịch bảo trì..."/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group string="Đối tượng">
+                                <field name="target_type"/>
+                                <field name="asset_id" attrs="{'invisible': [('target_type', '!=', 'asset')], 'required': [('target_type', '=', 'asset')]}"/>
+                                <field name="room_id" attrs="{'invisible': [('target_type', '!=', 'room')], 'required': [('target_type', '=', 'room')]}"/>
+                            </group>
+                            <group string="Tần suất">
+                                <label for="frequency_interval" string="Lặp lại mỗi"/>
+                                <div class="o_row">
+                                    <field name="frequency_interval" class="oe_inline"/>
+                                    <field name="frequency_type" class="oe_inline"/>
+                                </div>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Lịch trình">
+                                <field name="start_date"/>
+                                <field name="next_date" readonly="1"/>
+                                <field name="last_maintenance_date" readonly="1"/>
+                                <field name="last_maintenance_id" readonly="1"/>
+                            </group>
+                            <group string="Phân công">
+                                <field name="maintenance_type"/>
+                                <field name="estimated_duration" widget="float_time"/>
+                                <field name="assigned_tech_id"/>
+                            </group>
+                        </group>
+                        <group string="Cài đặt">
+                            <group>
+                                <field name="advance_days"/>
+                                <field name="send_reminder"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Mô tả công việc">
+                                <field name="description" placeholder="Mô tả chi tiết công việc bảo trì cần thực hiện..."/>
+                            </page>
+                            <page string="Lịch sử bảo trì">
+                                <field name="maintenance_ids" readonly="1">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="date_reported"/>
+                                        <field name="assigned_tech_id"/>
+                                        <field name="date_completed"/>
+                                        <field name="state" widget="badge"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Ghi chú">
+                                <field name="notes" placeholder="Ghi chú khác..."/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search View -->
+        <record id="view_dnu_maintenance_schedule_search" model="ir.ui.view">
+            <field name="name">dnu.maintenance.schedule.search</field>
+            <field name="model">dnu.maintenance.schedule</field>
+            <field name="arch" type="xml">
+                <search string="Lịch bảo trì">
+                    <field name="name"/>
+                    <field name="asset_id"/>
+                    <field name="room_id"/>
+                    <separator/>
+                    <filter string="Đang hoạt động" name="active" domain="[('state', '=', 'active')]"/>
+                    <filter string="Tạm dừng" name="paused" domain="[('state', '=', 'paused')]"/>
+                    <separator/>
+                    <filter string="Tài sản" name="asset" domain="[('target_type', '=', 'asset')]"/>
+                    <filter string="Phòng họp" name="room" domain="[('target_type', '=', 'room')]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Loại đối tượng" name="group_target" context="{'group_by': 'target_type'}"/>
+                        <filter string="Kỹ thuật viên" name="group_tech" context="{'group_by': 'assigned_tech_id'}"/>
+                        <filter string="Trạng thái" name="group_state" context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_dnu_maintenance_schedule" model="ir.actions.act_window">
+            <field name="name">Lịch bảo trì định kỳ</field>
+            <field name="res_model">dnu.maintenance.schedule</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_dnu_maintenance_schedule_search"/>
+            <field name="context">{'search_default_active': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo lịch bảo trì định kỳ
+                </p>
+                <p>
+                    Thiết lập lịch bảo trì định kỳ cho tài sản và phòng họp để đảm bảo chúng luôn hoạt động tốt.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ============ ASSET PIVOT VIEW ============ -->
+        <record id="view_dnu_asset_pivot" model="ir.ui.view">
+            <field name="name">dnu.asset.pivot</field>
+            <field name="model">dnu.asset</field>
+            <field name="arch" type="xml">
+                <pivot string="Thống kê tài sản" display_quantity="true" sample="1">
+                    <field name="category_id" type="row"/>
+                    <field name="state" type="col"/>
+                    <field name="purchase_value" type="measure" widget="monetary"/>
+                    <field name="current_value" type="measure" widget="monetary"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- ============ ASSET GRAPH VIEW ============ -->
+        <record id="view_dnu_asset_graph" model="ir.ui.view">
+            <field name="name">dnu.asset.graph</field>
+            <field name="model">dnu.asset</field>
+            <field name="arch" type="xml">
+                <graph string="Thống kê tài sản" type="bar" stacked="True" sample="1">
+                    <field name="category_id"/>
+                    <field name="state" type="col"/>
+                    <field name="purchase_value" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- ============ ASSET SUMMARY REPORT ============ -->
+        <record id="action_report_asset_summary" model="ir.actions.act_window">
+            <field name="name">Báo cáo tổng hợp tài sản</field>
+            <field name="res_model">dnu.asset</field>
+            <field name="view_mode">pivot,graph,tree</field>
+            <field name="domain">[('active', '=', True)]</field>
+            <field name="context">{
+                'group_by': ['category_id', 'state'],
+                'pivot_measures': ['purchase_value', 'current_value'],
+                'pivot_row_groupby': ['category_id'],
+                'pivot_column_groupby': ['state']
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo tài sản đầu tiên
+                </p>
+                <p>
+                    Báo cáo sẽ hiển thị thống kê tài sản theo danh mục và trạng thái.
+                </p>
+            </field>
+        </record>
+
+        <!-- ============ ASSET PDF REPORT ============ -->
+        <record id="action_report_asset_pdf" model="ir.actions.report">
+            <field name="name">Phiếu tài sản</field>
+            <field name="model">dnu.asset</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">dnu_meeting_asset.report_asset_card</field>
+            <field name="report_file">dnu_meeting_asset.report_asset_card</field>
+            <field name="print_report_name">'Tài sản - %s' % object.code</field>
+            <field name="binding_model_id" ref="model_dnu_asset"/>
+            <field name="binding_type">report</field>
+        </record>
+
+        <record id="report_asset_card" model="ir.ui.view">
+            <field name="name">report.dnu_meeting_asset.report_asset_card</field>
+            <field name="model">dnu.asset</field>
+            <field name="type">qweb</field>
+            <field name="arch" type="xml">
+                <t t-name="dnu_meeting_asset.report_asset_card">
+                    <t t-call="web.html_container">
+                        <t t-foreach="docs" t-as="doc">
+                            <t t-call="web.external_layout">
+                                <div class="page">
+                                    <h2>Phiếu thông tin tài sản</h2>
+                                    <br/>
+                                    <div class="row">
+                                        <div class="col-8">
+                                            <table class="table table-bordered">
+                                                <tr>
+                                                    <th style="width: 30%;">Mã tài sản</th>
+                                                    <td><t t-esc="doc.code"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Tên tài sản</th>
+                                                    <td><t t-esc="doc.name"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Danh mục</th>
+                                                    <td><t t-esc="doc.category_id.name"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Số serial</th>
+                                                    <td><t t-esc="doc.serial_number or '-'"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Trạng thái</th>
+                                                    <td>
+                                                        <span t-if="doc.state == 'available'" class="badge badge-success">Sẵn sàng</span>
+                                                        <span t-if="doc.state == 'assigned'" class="badge badge-info">Đã gán</span>
+                                                        <span t-if="doc.state == 'maintenance'" class="badge badge-warning">Bảo trì</span>
+                                                        <span t-if="doc.state == 'disposed'" class="badge badge-danger">Đã thanh lý</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Vị trí</th>
+                                                    <td><t t-esc="doc.location or '-'"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Được gán cho</th>
+                                                    <td><t t-esc="doc.assigned_to.name or '-'"/></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <t t-if="doc.image">
+                                                <img t-att-src="'data:image/png;base64,%s' % doc.image.decode('utf-8')" style="max-width: 200px;"/>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    
+                                    <h4 class="mt-4">Thông tin mua hàng</h4>
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th style="width: 25%;">Ngày mua</th>
+                                            <td><t t-esc="doc.purchase_date" t-options='{"widget": "date"}'/></td>
+                                            <th style="width: 25%;">Nhà cung cấp</th>
+                                            <td><t t-esc="doc.supplier_id.name or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Giá trị mua</th>
+                                            <td><t t-esc="'{:,.0f}'.format(doc.purchase_value)"/> VNĐ</td>
+                                            <th>Hết hạn bảo hành</th>
+                                            <td><t t-esc="doc.warranty_expiry" t-options='{"widget": "date"}'/></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Giá trị hiện tại</th>
+                                            <td colspan="3"><t t-esc="'{:,.0f}'.format(doc.current_value)"/> VNĐ</td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <t t-if="doc.description">
+                                        <h4 class="mt-4">Mô tả</h4>
+                                        <p><t t-raw="doc.description"/></p>
+                                    </t>
+                                    
+                                    <div class="mt-5">
+                                        <p class="text-muted small">
+                                            In ngày: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                        </p>
+                                    </div>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+                </t>
+            </field>
+        </record>
+
+        <!-- ============ MAINTENANCE PIVOT ============ -->
+        <record id="view_dnu_maintenance_pivot" model="ir.ui.view">
+            <field name="name">dnu.asset.maintenance.pivot</field>
+            <field name="model">dnu.asset.maintenance</field>
+            <field name="arch" type="xml">
+                <pivot string="Thống kê bảo trì">
+                    <field name="maintenance_type" type="row"/>
+                    <field name="state" type="col"/>
+                    <field name="cost_actual" type="measure"/>
+                    <field name="duration_days" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+        <record id="view_dnu_maintenance_graph" model="ir.ui.view">
+            <field name="name">dnu.asset.maintenance.graph</field>
+            <field name="model">dnu.asset.maintenance</field>
+            <field name="arch" type="xml">
+                <graph string="Thống kê bảo trì" type="bar">
+                    <field name="date_reported" interval="month"/>
+                    <field name="priority" type="col"/>
+                </graph>
+            </field>
+        </record>
+
+        <record id="action_report_maintenance_summary" model="ir.actions.act_window">
+            <field name="name">Báo cáo bảo trì</field>
+            <field name="res_model">dnu.asset.maintenance</field>
+            <field name="view_mode">pivot,graph,tree</field>
+        </record>
+
+        <!-- ============ INVENTORY REPORT ============ -->
+        <record id="action_report_asset_inventory" model="ir.actions.report">
+            <field name="name">Biên bản kiểm kê tài sản</field>
+            <field name="model">dnu.asset.inventory</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">dnu_meeting_asset.report_asset_inventory_document</field>
+            <field name="report_file">dnu_meeting_asset.report_asset_inventory_document</field>
+            <field name="print_report_name">'Biên bản kiểm kê - %s' % object.name</field>
+            <field name="binding_model_id" ref="model_dnu_asset_inventory"/>
+            <field name="binding_type">report</field>
+        </record>
+
+        <record id="report_asset_inventory_document" model="ir.ui.view">
+            <field name="name">report.dnu_meeting_asset.report_asset_inventory_document</field>
+            <field name="model">dnu.asset.inventory</field>
+            <field name="type">qweb</field>
+            <field name="arch" type="xml">
+                <t t-name="dnu_meeting_asset.report_asset_inventory_document">
+                    <t t-call="web.html_container">
+                        <t t-foreach="docs" t-as="doc">
+                            <t t-call="web.external_layout">
+                                <div class="page">
+                                    <h2 class="text-center">BIÊN BẢN KIỂM KÊ TÀI SẢN</h2>
+                                    <h4 class="text-center"><t t-esc="doc.name"/></h4>
+                                    <br/>
+                                    
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Ngày bắt đầu:</strong> <t t-esc="doc.start_date"/>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Ngày kết thúc:</strong> <t t-esc="doc.end_date or '-'"/>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Phạm vi:</strong> 
+                                            <span t-if="doc.scope == 'all'">Toàn bộ</span>
+                                            <span t-if="doc.scope == 'category'">Theo danh mục</span>
+                                            <span t-if="doc.scope == 'location'">Theo vị trí</span>
+                                            <span t-if="doc.scope == 'department'">Theo phòng ban</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Trạng thái:</strong> 
+                                            <span t-if="doc.state == 'draft'" class="badge badge-secondary">Nháp</span>
+                                            <span t-if="doc.state == 'in_progress'" class="badge badge-info">Đang tiến hành</span>
+                                            <span t-if="doc.state == 'completed'" class="badge badge-success">Hoàn thành</span>
+                                        </div>
+                                    </div>
+                                    <br/>
+                                    
+                                    <h4>Chi tiết kiểm kê:</h4>
+                                    <table class="table table-bordered table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>STT</th>
+                                                <th>Mã tài sản</th>
+                                                <th>Tên tài sản</th>
+                                                <th>Danh mục</th>
+                                                <th>Trạng thái hệ thống</th>
+                                                <th>Kết quả kiểm kê</th>
+                                                <th>Tình trạng</th>
+                                                <th>Ghi chú</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-set="index" t-value="1"/>
+                                            <tr t-foreach="doc.line_ids" t-as="line">
+                                                <td><t t-esc="index"/></td>
+                                                <td><t t-esc="line.asset_id.code"/></td>
+                                                <td><t t-esc="line.asset_id.name"/></td>
+                                                <td><t t-esc="line.asset_id.category_id.name"/></td>
+                                                <td>
+                                                    <span t-if="line.asset_id.state == 'available'">Sẵn sàng</span>
+                                                    <span t-if="line.asset_id.state == 'assigned'">Đã gán</span>
+                                                    <span t-if="line.asset_id.state == 'maintenance'">Bảo trì</span>
+                                                    <span t-if="line.asset_id.state == 'disposed'">Đã thanh lý</span>
+                                                </td>
+                                                <td>
+                                                    <span t-if="line.status == 'found'" class="text-success">✓ Tìm thấy</span>
+                                                    <span t-if="line.status == 'missing'" class="text-danger">✗ Mất</span>
+                                                    <span t-if="line.status == 'damaged'" class="text-warning">⚠ Hỏng</span>
+                                                    <span t-if="not line.status">-</span>
+                                                </td>
+                                                <td><t t-esc="line.condition or '-'"/></td>
+                                                <td><t t-esc="line.notes or '-'"/></td>
+                                                <t t-set="index" t-value="index + 1"/>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    
+                                    <br/>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <h5>Tổng hợp kết quả:</h5>
+                                            <ul>
+                                                <li>Tổng số tài sản: <strong><t t-esc="doc.total_assets"/></strong></li>
+                                                <li>Đã kiểm: <strong><t t-esc="doc.checked_assets"/></strong></li>
+                                                <li>Tìm thấy: <strong class="text-success"><t t-esc="doc.found_assets"/></strong></li>
+                                                <li>Mất/Hỏng: <strong class="text-danger"><t t-esc="doc.missing_assets"/></strong></li>
+                                                <li>Thừa: <strong class="text-info"><t t-esc="doc.extra_assets"/></strong></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <br/><br/>
+                                    <div class="row">
+                                        <div class="col-4 text-center">
+                                            <strong>Người lập biểu</strong>
+                                            <br/><br/><br/>
+                                            <span>(Ký, ghi rõ họ tên)</span>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <strong>Trưởng phòng</strong>
+                                            <br/><br/><br/>
+                                            <span>(Ký, ghi rõ họ tên)</span>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <strong>Giám đốc</strong>
+                                            <br/><br/><br/>
+                                            <span>(Ký, ghi rõ họ tên)</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-right" style="margin-top: 20px;">
+                                        <p>
+                                            In ngày: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                        </p>
+                                    </div>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+                </t>
+            </field>
+        </record>
+
+    </data>
+</odoo>

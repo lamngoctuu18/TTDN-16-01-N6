@@ -72,6 +72,7 @@
             <field name="view_mode">tree,form</field>
             <field name="search_view_id" ref = "nhan_vien_search"/>
         </record>
+
     </data>
 </odoo>
         

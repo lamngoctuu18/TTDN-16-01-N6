@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action for Inventory Lines - Định nghĩa trước để sử dụng trong form -->
+    <record id="action_asset_inventory_line_action" model="ir.actions.act_window">
+        <field name="name">Chi tiết kiểm kê</field>
+        <field name="res_model">dnu.asset.inventory.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('inventory_id', '=', active_id)]</field>
+        <field name="context">{'default_inventory_id': active_id}</field>
+    </record>
+
+    <!-- Inventory Tree View -->
+    <record id="view_asset_inventory_tree" model="ir.ui.view">
+        <field name="name">dnu.asset.inventory.tree</field>
+        <field name="model">dnu.asset.inventory</field>
+        <field name="arch" type="xml">
+            <tree string="Kiểm kê tài sản" decoration-info="state=='draft'" decoration-warning="state=='in_progress'" decoration-success="state=='done'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="inventory_type"/>
+                <field name="responsible_id"/>
+                <field name="total_assets"/>
+                <field name="checked_assets"/>
+                <field name="completion_rate" widget="progressbar"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Inventory Form View -->
+    <record id="view_asset_inventory_form" model="ir.ui.view">
+        <field name="name">dnu.asset.inventory.form</field>
+        <field name="model">dnu.asset.inventory</field>
+        <field name="arch" type="xml">
+            <form string="Kiểm kê tài sản">
+                <header>
+                    <button name="action_generate_inventory" string="Tạo danh sách" type="object" class="oe_highlight" states="draft"/>
+                    <button name="action_start" string="Bắt đầu kiểm kê" type="object" class="oe_highlight" states="draft"/>
+                    <button name="action_submit_review" string="Gửi duyệt" type="object" class="oe_highlight" states="in_progress"/>
+                    <button name="action_approve" string="Phê duyệt" type="object" class="oe_highlight" states="review"/>
+                    <button name="action_cancel" string="Hủy" type="object" states="draft,in_progress,review"/>
+                    <button name="action_print_report" string="In báo cáo" type="object" states="review,done"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,review,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(action_asset_inventory_line_action)d" type="action" class="oe_stat_button" icon="fa-list">
+                            <field name="total_assets" widget="statinfo" string="Tài sản"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="inventory_type"/>
+                            <field name="scope"/>
+                            <field name="responsible_id"/>
+                        </group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="team_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <group string="Phạm vi kiểm kê" attrs="{'invisible': [('scope','=','all')]}">
+                        <field name="category_ids" widget="many2many_tags" attrs="{'invisible': [('scope','!=','category')], 'required': [('scope','=','category')]}"/>
+                        <field name="department_ids" widget="many2many_tags" attrs="{'invisible': [('scope','!=','department')], 'required': [('scope','=','department')]}"/>
+                        <field name="location_ids" attrs="{'invisible': [('scope','!=','location')], 'required': [('scope','=','location')]}"/>
+                    </group>
+                    <group string="Thống kê" col="4">
+                        <field name="total_assets"/>
+                        <field name="checked_assets"/>
+                        <field name="found_assets"/>
+                        <field name="missing_assets"/>
+                        <field name="extra_assets"/>
+                        <field name="completion_rate" widget="progressbar"/>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết kiểm kê">
+                            <field name="line_ids">
+                                <tree editable="top" decoration-success="status=='found'" decoration-danger="status=='missing'" decoration-warning="status=='damaged'">
+                                    <field name="asset_id"/>
+                                    <field name="expected_location"/>
+                                    <field name="expected_assigned_to"/>
+                                    <field name="actual_location"/>
+                                    <field name="actual_assigned_to"/>
+                                    <field name="condition"/>
+                                    <field name="status"/>
+                                    <field name="state" widget="badge"/>
+                                    <button name="action_mark_found" string="Tìm thấy" type="object" icon="fa-check" states="pending"/>
+                                    <button name="action_mark_missing" string="Mất" type="object" icon="fa-times" states="pending"/>
+                                    <button name="action_mark_damaged" string="Hỏng" type="object" icon="fa-exclamation" states="pending"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Tóm tắt kết quả" attrs="{'invisible': [('state','not in',['review','done'])]}">
+                            <field name="summary" widget="html"/>
+                        </page>
+                        <page string="Ghi chú &amp; Kiến nghị">
+                            <group>
+                                <field name="notes" placeholder="Ghi chú về quá trình kiểm kê..."/>
+                                <field name="recommendations" placeholder="Kiến nghị sau kiểm kê..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Inventory Line Tree View -->
+    <record id="view_asset_inventory_line_tree" model="ir.ui.view">
+        <field name="name">dnu.asset.inventory.line.tree</field>
+        <field name="model">dnu.asset.inventory.line</field>
+        <field name="arch" type="xml">
+            <tree string="Chi tiết kiểm kê" decoration-success="status=='found'" decoration-danger="status=='missing'" decoration-warning="status=='damaged'">
+                <field name="asset_id"/>
+                <field name="expected_location"/>
+                <field name="expected_assigned_to"/>
+                <field name="actual_location"/>
+                <field name="actual_assigned_to"/>
+                <field name="condition"/>
+                <field name="status"/>
+                <field name="state" widget="badge"/>
+                <field name="checked_date"/>
+                <field name="checked_by"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Inventory Line Form View -->
+    <record id="view_asset_inventory_line_form" model="ir.ui.view">
+        <field name="name">dnu.asset.inventory.line.form</field>
+        <field name="model">dnu.asset.inventory.line</field>
+        <field name="arch" type="xml">
+            <form string="Chi tiết kiểm kê">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="asset_id" readonly="1"/>
+                            <field name="inventory_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="state" widget="badge"/>
+                            <field name="status"/>
+                        </group>
+                    </group>
+                    <group string="Thông tin dự kiến">
+                        <field name="expected_location"/>
+                        <field name="expected_assigned_to"/>
+                    </group>
+                    <group string="Thông tin thực tế">
+                        <field name="actual_location"/>
+                        <field name="actual_assigned_to"/>
+                        <field name="condition"/>
+                        <field name="checked_date"/>
+                        <field name="checked_by"/>
+                    </group>
+                    <field name="notes"/>
+                    <field name="photo"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_asset_inventory" model="ir.actions.act_window">
+        <field name="name">Kiểm kê tài sản</field>
+        <field name="res_model">dnu.asset.inventory</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

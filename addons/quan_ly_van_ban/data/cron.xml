@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="ir_cron_van_ban_den_reminder" model="ir.cron">
+            <field name="name">Nhắc hạn văn bản đến</field>
+            <field name="model_id" ref="quan_ly_van_ban.model_van_ban_den"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_remind_due()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+        </record>
+    </data>
+</odoo>

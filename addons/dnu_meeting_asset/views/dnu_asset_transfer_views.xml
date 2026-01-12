@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Transfer Tree View -->
+    <record id="view_asset_transfer_tree" model="ir.ui.view">
+        <field name="name">dnu.asset.transfer.tree</field>
+        <field name="model">dnu.asset.transfer</field>
+        <field name="arch" type="xml">
+            <tree string="Luân chuyển tài sản" decoration-info="state=='draft'" decoration-warning="state=='in_transit'" decoration-success="state=='completed'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="asset_id"/>
+                <field name="transfer_type"/>
+                <field name="from_employee_id"/>
+                <field name="to_employee_id"/>
+                <field name="reason"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Transfer Form View -->
+    <record id="view_asset_transfer_form" model="ir.ui.view">
+        <field name="name">dnu.asset.transfer.form</field>
+        <field name="model">dnu.asset.transfer</field>
+        <field name="arch" type="xml">
+            <form string="Luân chuyển tài sản">
+                <header>
+                    <button name="action_submit" string="Gửi yêu cầu" type="object" class="oe_highlight" states="draft"/>
+                    <button name="action_approve" string="Duyệt" type="object" class="oe_highlight" states="submitted"/>
+                    <button name="action_start_transfer" string="Bắt đầu luân chuyển" type="object" class="oe_highlight" states="approved"/>
+                    <button name="action_complete" string="Hoàn thành" type="object" class="oe_highlight" states="in_transit"/>
+                    <button name="action_cancel" string="Hủy" type="object" states="draft,submitted,approved"/>
+                    <button name="action_print_handover_document" string="In biên bản" type="object"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,in_transit,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="transfer_type"/>
+                            <field name="asset_id" options="{'no_create': True}"/>
+                            <field name="reason"/>
+                        </group>
+                        <group>
+                            <field name="handover_date"/>
+                            <field name="handover_by"/>
+                            <field name="received_by"/>
+                        </group>
+                    </group>
+                    <group string="Từ">
+                        <field name="from_employee_id" attrs="{'invisible': [('transfer_type','not in',['employee','department'])]}"/>
+                        <field name="from_department_id" attrs="{'invisible': [('transfer_type','!=','department')]}"/>
+                        <field name="from_location"/>
+                    </group>
+                    <group string="Đến">
+                        <field name="to_employee_id" attrs="{'invisible': [('transfer_type','!=','employee')], 'required': [('transfer_type','=','employee')]}"/>
+                        <field name="to_department_id" attrs="{'invisible': [('transfer_type','!=','department')], 'required': [('transfer_type','=','department')]}"/>
+                        <field name="to_location" attrs="{'invisible': [('transfer_type','!=','location')], 'required': [('transfer_type','=','location')]}"/>
+                    </group>
+                    <group string="Tình trạng tài sản">
+                        <field name="condition_before"/>
+                        <field name="condition_after"/>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết lý do">
+                            <field name="reason_detail" placeholder="Mô tả chi tiết lý do luân chuyển..."/>
+                        </page>
+                        <page string="Người chứng kiến &amp; Tài liệu">
+                            <group>
+                                <field name="witness_ids" widget="many2many_tags"/>
+                                <field name="attachment_ids" widget="many2many_binary"/>
+                            </group>
+                        </page>
+                        <page string="Ảnh">
+                            <group>
+                                <field name="photos_before" widget="image"/>
+                                <field name="photos_after" widget="image"/>
+                            </group>
+                        </page>
+                        <page string="Phê duyệt" attrs="{'invisible': [('state','in',['draft'])]}">
+                            <group>
+                                <field name="approved_by"/>
+                                <field name="approved_date"/>
+                            </group>
+                        </page>
+                        <page string="Ghi chú">
+                            <field name="notes" placeholder="Ghi chú về luân chuyển..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_asset_transfer" model="ir.actions.act_window">
+        <field name="name">Luân chuyển tài sản</field>
+        <field name="res_model">dnu.asset.transfer</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

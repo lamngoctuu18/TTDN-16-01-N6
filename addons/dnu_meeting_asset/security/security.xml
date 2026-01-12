@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        
+        <!-- Categories -->
+        <record id="module_category_dnu_asset" model="ir.module.category">
+            <field name="name">Quản lý Tài sản &amp; Phòng họp</field>
+            <field name="description">Quản lý tài sản và phòng họp</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- Group: Asset User -->
+        <record id="group_asset_user" model="res.groups">
+            <field name="name">Người dùng Tài sản</field>
+            <field name="category_id" ref="module_category_dnu_asset"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Người dùng có thể xem tài sản và tạo yêu cầu bảo trì</field>
+        </record>
+
+        <!-- Group: Asset Manager -->
+        <record id="group_asset_manager" model="res.groups">
+            <field name="name">Quản lý Tài sản</field>
+            <field name="category_id" ref="module_category_dnu_asset"/>
+            <field name="implied_ids" eval="[(4, ref('group_asset_user'))]"/>
+            <field name="comment">Quản lý tài sản, có thể tạo, sửa, xóa tài sản và gán cho nhân viên</field>
+        </record>
+
+        <!-- Group: Meeting User -->
+        <record id="group_meeting_user" model="res.groups">
+            <field name="name">Người dùng Phòng họp</field>
+            <field name="category_id" ref="module_category_dnu_asset"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Người dùng có thể đặt phòng họp</field>
+        </record>
+
+        <!-- Group: Meeting Manager -->
+        <record id="group_meeting_manager" model="res.groups">
+            <field name="name">Quản lý Phòng họp</field>
+            <field name="category_id" ref="module_category_dnu_asset"/>
+            <field name="implied_ids" eval="[(4, ref('group_meeting_user'))]"/>
+            <field name="comment">Quản lý phòng họp, có thể duyệt/hủy booking</field>
+        </record>
+
+        <!-- Group: Facility Staff -->
+        <record id="group_facility_staff" model="res.groups">
+            <field name="name">Nhân viên Cơ sở vật chất</field>
+            <field name="category_id" ref="module_category_dnu_asset"/>
+            <field name="implied_ids" eval="[(4, ref('group_asset_manager')), (4, ref('group_meeting_manager'))]"/>
+            <field name="comment">Nhân viên quản lý cơ sở vật chất, có quyền đầy đủ</field>
+        </record>
+
+        <!-- Record Rules: Asset -->
+        <record id="asset_rule_user" model="ir.rule">
+            <field name="name">Asset: User can see all</field>
+            <field name="model_id" ref="model_dnu_asset"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_asset_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="asset_rule_manager" model="ir.rule">
+            <field name="name">Asset: Manager can do everything</field>
+            <field name="model_id" ref="model_dnu_asset"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_asset_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Record Rules: Meeting Booking -->
+        <record id="booking_rule_user_own" model="ir.rule">
+            <field name="name">Booking: User can see own bookings</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="domain_force">[('organizer_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_meeting_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="booking_rule_manager" model="ir.rule">
+            <field name="name">Booking: Manager can see all</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_meeting_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

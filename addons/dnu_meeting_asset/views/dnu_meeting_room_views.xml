@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Tree View -->
+        <record id="view_dnu_meeting_room_tree" model="ir.ui.view">
+            <field name="name">dnu.meeting.room.tree</field>
+            <field name="model">dnu.meeting.room</field>
+            <field name="arch" type="xml">
+                <tree string="Phòng họp">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="location"/>
+                    <field name="capacity"/>
+                    <field name="is_available_now" string="Sẵn sàng" widget="boolean_toggle"/>
+                    <field name="state" widget="badge" decoration-success="state=='available'" decoration-warning="state=='maintenance'"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Kanban View -->
+        <record id="view_dnu_meeting_room_kanban" model="ir.ui.view">
+            <field name="name">dnu.meeting.room.kanban</field>
+            <field name="model">dnu.meeting.room</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_mobile">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="capacity"/>
+                    <field name="location"/>
+                    <field name="state"/>
+                    <field name="is_available_now"/>
+                    <field name="image"/>
+                    <field name="color"/>
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div t-attf-class="#{kanban_color(record.color.raw_value)} oe_kanban_global_click">
+                                <div class="o_kanban_image">
+                                    <img t-att-src="kanban_image('dnu.meeting.room', 'image', record.id.raw_value)" alt="Room"/>
+                                </div>
+                                <div class="oe_kanban_details">
+                                    <div class="o_kanban_record_top">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                        <span class="badge badge-pill" t-if="record.is_available_now.raw_value" style="background-color: #28a745;">
+                                            <i class="fa fa-check"/> Sẵn sàng
+                                        </span>
+                                        <span class="badge badge-pill badge-danger" t-else="">
+                                            <i class="fa fa-times"/> Đang sử dụng
+                                        </span>
+                                    </div>
+                                    <div class="o_kanban_record_body">
+                                        <div><i class="fa fa-map-marker" title="Location"/> <field name="location"/></div>
+                                        <div><i class="fa fa-users" title="Capacity"/> Sức chứa: <field name="capacity"/> người</div>
+                                    </div>
+                                    <div class="o_kanban_record_bottom">
+                                        <field name="state" widget="label_selection" options="{'classes': {'available': 'success', 'maintenance': 'warning', 'closed': 'danger'}}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_dnu_meeting_room_form" model="ir.ui.view">
+            <field name="name">dnu.meeting.room.form</field>
+            <field name="model">dnu.meeting.room</field>
+            <field name="arch" type="xml">
+                <form string="Phòng họp">
+                    <header>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <field name="image" widget="image" class="oe_avatar" options="{'size': [90, 90]}"/>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_bookings" type="object" class="oe_stat_button" icon="fa-calendar">
+                                <field name="booking_count" widget="statinfo" string="Lượt đặt"/>
+                            </button>
+                        </div>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Tên phòng họp..."/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="code"/>
+                                <field name="capacity"/>
+                                <field name="responsible_id"/>
+                            </group>
+                            <group>
+                                <field name="location"/>
+                                <field name="floor"/>
+                                <field name="building"/>
+                            </group>
+                        </group>
+                        <group string="Tiện nghi">
+                            <group>
+                                <field name="has_projector"/>
+                                <field name="has_tv"/>
+                                <field name="has_whiteboard"/>
+                            </group>
+                            <group>
+                                <field name="has_video_conference"/>
+                                <field name="has_air_conditioning"/>
+                                <field name="has_wifi"/>
+                            </group>
+                        </group>
+                        <group string="Cài đặt đặt phòng">
+                            <group>
+                                <field name="allow_booking"/>
+                                <field name="booking_advance_days"/>
+                            </group>
+                            <group>
+                                <field name="min_booking_duration"/>
+                                <field name="max_booking_duration"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Trang thiết bị">
+                                <field name="equipment_ids">
+                                    <tree>
+                                        <field name="code"/>
+                                        <field name="name"/>
+                                        <field name="category_id"/>
+                                        <field name="state"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Mô tả">
+                                <field name="description" placeholder="Mô tả phòng họp..."/>
+                            </page>
+                            <page string="Ghi chú">
+                                <field name="notes"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_dnu_meeting_room" model="ir.actions.act_window">
+            <field name="name">Phòng họp</field>
+            <field name="res_model">dnu.meeting.room</field>
+            <field name="view_mode">kanban,tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo phòng họp mới
+                </p>
+                <p>
+                    Quản lý phòng họp và trang thiết bị kèm theo.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

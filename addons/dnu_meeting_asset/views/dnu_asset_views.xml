@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Tree View -->
+        <record id="view_dnu_asset_tree" model="ir.ui.view">
+            <field name="name">dnu.asset.tree</field>
+            <field name="model">dnu.asset</field>
+            <field name="arch" type="xml">
+                <tree string="Tài sản" decoration-info="state=='available'" decoration-warning="state=='maintenance'" decoration-muted="state=='disposed'">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="category_id"/>
+                    <field name="serial_number"/>
+                    <field name="assigned_to"/>
+                    <field name="location"/>
+                    <field name="purchase_date"/>
+                    <field name="current_value" widget="monetary" options="{'currency_field': 'company_id'}"/>
+                    <field name="state" widget="badge" decoration-success="state=='available'" decoration-info="state=='assigned'" decoration-warning="state=='maintenance'" decoration-danger="state=='disposed'"/>
+                    <field name="company_id" invisible="1"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Kanban View -->
+        <record id="view_dnu_asset_kanban" model="ir.ui.view">
+            <field name="name">dnu.asset.kanban</field>
+            <field name="model">dnu.asset</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_mobile">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="category_id"/>
+                    <field name="state"/>
+                    <field name="assigned_to"/>
+                    <field name="image"/>
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_global_click">
+                                <div class="o_kanban_image">
+                                    <img t-att-src="kanban_image('dnu.asset', 'image', record.id.raw_value)" alt="Asset"/>
+                                </div>
+                                <div class="oe_kanban_details">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="name"/>
+                                    </strong>
+                                    <div class="o_kanban_record_subtitle">
+                                        <field name="code"/> - <field name="category_id"/>
+                                    </div>
+                                    <div class="o_kanban_record_body">
+                                        <field name="location"/>
+                                    </div>
+                                    <div class="o_kanban_record_bottom">
+                                        <div class="oe_kanban_bottom_left">
+                                            <field name="state" widget="label_selection" options="{'classes': {'available': 'success', 'assigned': 'info', 'maintenance': 'warning', 'disposed': 'danger'}}"/>
+                                        </div>
+                                        <div class="oe_kanban_bottom_right">
+                                            <field name="assigned_to" widget="many2one_avatar_user"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_dnu_asset_form" model="ir.ui.view">
+            <field name="name">dnu.asset.form</field>
+            <field name="model">dnu.asset</field>
+            <field name="arch" type="xml">
+                <form string="Tài sản">
+                    <header>
+                        <button name="action_assign_to_employee" string="Gán cho nhân viên" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'available')]}"/>
+                        <button name="action_create_maintenance" string="Tạo yêu cầu bảo trì" type="object" class="btn-warning"/>
+                        <field name="state" widget="statusbar" statusbar_visible="available,assigned,maintenance,disposed"/>
+                    </header>
+                    <sheet>
+                        <field name="image" widget="image" class="oe_avatar" options="{'size': [90, 90]}"/>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_assignments" type="object" class="oe_stat_button" icon="fa-history">
+                                <field name="assignment_count" widget="statinfo" string="Lịch sử gán"/>
+                            </button>
+                            <button name="action_view_maintenances" type="object" class="oe_stat_button" icon="fa-wrench">
+                                <field name="maintenance_count" widget="statinfo" string="Bảo trì"/>
+                            </button>
+                        </div>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Tên tài sản..."/>
+                            </h1>
+                            <h3>
+                                <field name="code" readonly="1"/>
+                            </h3>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="category_id" options="{'no_create': True}"/>
+                                <field name="serial_number"/>
+                                <field name="barcode"/>
+                            </group>
+                            <group>
+                                <field name="assigned_to" attrs="{'readonly': [('state', '!=', 'assigned')]}"/>
+                                <field name="assignment_date" attrs="{'invisible': [('assigned_to', '=', False)]}"/>
+                                <field name="location"/>
+                                <field name="room_id"/>
+                            </group>
+                        </group>
+                        <group string="Thông tin mua hàng">
+                            <group>
+                                <field name="purchase_date"/>
+                                <field name="purchase_value"/>
+                                <field name="current_value"/>
+                            </group>
+                            <group>
+                                <field name="supplier_id"/>
+                                <field name="warranty_expiry"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Mô tả">
+                                <field name="description" placeholder="Mô tả chi tiết về tài sản..."/>
+                            </page>
+                            <page string="Lịch sử gán" name="assignments">
+                                <field name="assignment_ids" readonly="1">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="employee_id"/>
+                                        <field name="date_from"/>
+                                        <field name="date_to"/>
+                                        <field name="state" widget="badge"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Lịch sử bảo trì" name="maintenances">
+                                <field name="maintenance_ids" readonly="1">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="maintenance_type"/>
+                                        <field name="date_reported"/>
+                                        <field name="assigned_tech_id"/>
+                                        <field name="priority" widget="priority"/>
+                                        <field name="state" widget="badge"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            <page string="Ghi chú">
+                                <field name="notes" placeholder="Ghi chú khác..."/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search View -->
+        <record id="view_dnu_asset_search" model="ir.ui.view">
+            <field name="name">dnu.asset.search</field>
+            <field name="model">dnu.asset</field>
+            <field name="arch" type="xml">
+                <search string="Tài sản">
+                    <field name="name" filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"/>
+                    <field name="category_id"/>
+                    <field name="assigned_to"/>
+                    <field name="location"/>
+                    <separator/>
+                    <filter string="Sẵn sàng" name="available" domain="[('state', '=', 'available')]"/>
+                    <filter string="Đã gán" name="assigned" domain="[('state', '=', 'assigned')]"/>
+                    <filter string="Bảo trì" name="maintenance" domain="[('state', '=', 'maintenance')]"/>
+                    <separator/>
+                    <filter string="Được gán cho tôi" name="my_assets" domain="[('assigned_to.user_id', '=', uid)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Danh mục" name="group_category" context="{'group_by': 'category_id'}"/>
+                        <filter string="Trạng thái" name="group_state" context="{'group_by': 'state'}"/>
+                        <filter string="Vị trí" name="group_location" context="{'group_by': 'location'}"/>
+                        <filter string="Người được gán" name="group_assigned" context="{'group_by': 'assigned_to'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_dnu_asset" model="ir.actions.act_window">
+            <field name="name">Tài sản</field>
+            <field name="res_model">dnu.asset</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="search_view_id" ref="view_dnu_asset_search"/>
+            <field name="context">{'search_default_available': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo tài sản mới
+                </p>
+                <p>
+                    Quản lý tất cả tài sản của công ty: thiết bị, máy móc, đồ dùng văn phòng...
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Email Template: Booking Confirmation -->
+        <record id="email_template_booking_confirmation" model="mail.template">
+            <field name="name">Meeting Booking: Confirmation</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="subject">Xác nhận đặt phòng: ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.organizer_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #2c3e50;">Xác nhận đặt phòng họp</h2>
+    
+    <p>Xin chào <strong>${object.organizer_id.name}</strong>,</p>
+    
+    <p>Yêu cầu đặt phòng của bạn đã được <strong>xác nhận</strong>.</p>
+    
+    <div style="background-color: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Mã đặt phòng:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Phòng họp:</strong></td>
+                <td style="padding: 5px;">${object.room_id.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Chủ đề:</strong></td>
+                <td style="padding: 5px;">${object.subject}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Thời gian:</strong></td>
+                <td style="padding: 5px;">
+                    ${format_datetime(object.start_datetime, dt_format='dd/MM/yyyy HH:mm')} - 
+                    ${format_datetime(object.end_datetime, dt_format='HH:mm')}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Số người:</strong></td>
+                <td style="padding: 5px;">${object.num_attendees} người</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Vị trí:</strong></td>
+                <td style="padding: 5px;">${object.room_id.location or 'N/A'}</td>
+            </tr>
+        </table>
+    </div>
+    
+    % if object.description:
+    <p><strong>Mô tả:</strong><br/>
+    ${object.description}
+    </p>
+    % endif
+    
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.meeting.booking&amp;view_type=form" 
+           style="background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem chi tiết
+        </a>
+    </p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.<br/>
+        Nếu có thắc mắc, vui lòng liên hệ bộ phận quản lý phòng họp.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Booking Cancellation -->
+        <record id="email_template_booking_cancellation" model="mail.template">
+            <field name="name">Meeting Booking: Cancellation</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="subject">Hủy đặt phòng: ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.organizer_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #e74c3c;">Thông báo hủy đặt phòng</h2>
+    
+    <p>Xin chào <strong>${object.organizer_id.name}</strong>,</p>
+    
+    <p>Đặt phòng <strong>${object.name}</strong> đã bị <strong style="color: #e74c3c;">HỦY</strong>.</p>
+    
+    <div style="background-color: #ffecec; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Phòng họp:</strong></td>
+                <td style="padding: 5px;">${object.room_id.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Thời gian:</strong></td>
+                <td style="padding: 5px;">
+                    ${format_datetime(object.start_datetime, dt_format='dd/MM/yyyy HH:mm')} - 
+                    ${format_datetime(object.end_datetime, dt_format='HH:mm')}
+                </td>
+            </tr>
+            % if object.cancellation_reason:
+            <tr>
+                <td style="padding: 5px;"><strong>Lý do:</strong></td>
+                <td style="padding: 5px;">${object.cancellation_reason}</td>
+            </tr>
+            % endif
+        </table>
+    </div>
+    
+    <p>Nếu bạn cần đặt phòng khác, vui lòng truy cập hệ thống để tạo yêu cầu mới.</p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Booking Reminder -->
+        <record id="email_template_booking_reminder" model="mail.template">
+            <field name="name">Meeting Booking: Reminder</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="subject">Nhắc nhở: Cuộc họp ${object.subject}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.organizer_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #f39c12;">⏰ Nhắc nhở cuộc họp</h2>
+    
+    <p>Xin chào <strong>${object.organizer_id.name}</strong>,</p>
+    
+    <p>Cuộc họp của bạn sẽ bắt đầu trong <strong>30 phút nữa</strong>.</p>
+    
+    <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Chủ đề:</strong></td>
+                <td style="padding: 5px;">${object.subject}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Phòng:</strong></td>
+                <td style="padding: 5px;">${object.room_id.name} - ${object.room_id.location or ''}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Thời gian:</strong></td>
+                <td style="padding: 5px;">
+                    ${format_datetime(object.start_datetime, dt_format='HH:mm')} - 
+                    ${format_datetime(object.end_datetime, dt_format='HH:mm')}
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <p>Đừng quên chuẩn bị tài liệu và đến đúng giờ!</p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email nhắc nhở tự động.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Asset Lending Approved -->
+        <record id="email_template_lending_approved" model="mail.template">
+            <field name="name">Asset Lending: Approved</field>
+            <field name="model_id" ref="model_dnu_asset_lending"/>
+            <field name="subject">Yêu cầu mượn tài sản đã được phê duyệt: ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.borrower_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #27ae60;">✅ Yêu cầu mượn tài sản đã được phê duyệt</h2>
+    
+    <p>Xin chào <strong>${object.borrower_id.name}</strong>,</p>
+    
+    <p>Yêu cầu mượn tài sản của bạn đã được <strong style="color: #27ae60;">PHÊ DUYỆT</strong>.</p>
+    
+    <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Mã phiếu mượn:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Tài sản:</strong></td>
+                <td style="padding: 5px;">${object.asset_id.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Ngày mượn:</strong></td>
+                <td style="padding: 5px;">${format_datetime(object.borrow_date, dt_format='dd/MM/yyyy HH:mm')}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Ngày trả dự kiến:</strong></td>
+                <td style="padding: 5px;">${format_datetime(object.expected_return_date, dt_format='dd/MM/yyyy HH:mm')}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <p>Vui lòng đến nhận tài sản và trả đúng hạn.</p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Asset Lending Overdue -->
+        <record id="email_template_lending_overdue" model="mail.template">
+            <field name="name">Asset Lending: Overdue Warning</field>
+            <field name="model_id" ref="model_dnu_asset_lending"/>
+            <field name="subject">⚠️ CẢNH BÁO: Tài sản mượn đã quá hạn - ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.borrower_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #e74c3c;">⚠️ CẢNH BÁO: Tài sản mượn đã quá hạn</h2>
+    
+    <p>Xin chào <strong>${object.borrower_id.name}</strong>,</p>
+    
+    <p>Tài sản bạn mượn đã <strong style="color: #e74c3c;">QUÁ HẠN TRẢ</strong>.</p>
+    
+    <div style="background-color: #ffecec; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #e74c3c;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Mã phiếu mượn:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Tài sản:</strong></td>
+                <td style="padding: 5px;">${object.asset_id.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Ngày trả dự kiến:</strong></td>
+                <td style="padding: 5px; color: #e74c3c;"><strong>${format_datetime(object.expected_return_date, dt_format='dd/MM/yyyy HH:mm')}</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Số ngày quá hạn:</strong></td>
+                <td style="padding: 5px; color: #e74c3c;"><strong>${object.overdue_days} ngày</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <p><strong>Vui lòng trả tài sản NGAY LẬP TỨC để tránh ảnh hưởng đến công việc của người khác.</strong></p>
+    
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.asset.lending&amp;view_type=form" 
+           style="background-color: #e74c3c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem chi tiết phiếu mượn
+        </a>
+    </p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email cảnh báo tự động.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Asset Lending Return Reminder -->
+        <record id="email_template_lending_return_reminder" model="mail.template">
+            <field name="name">Asset Lending: Return Reminder</field>
+            <field name="model_id" ref="model_dnu_asset_lending"/>
+            <field name="subject">Nhắc nhở: Hạn trả tài sản sắp đến - ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.borrower_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #f39c12;">⏰ Nhắc nhở trả tài sản</h2>
+    
+    <p>Xin chào <strong>${object.borrower_id.name}</strong>,</p>
+    
+    <p>Đây là lời nhắc nhở rằng tài sản bạn đang mượn sẽ đến hạn trả <strong>vào ngày mai</strong>.</p>
+    
+    <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Mã phiếu mượn:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Tài sản:</strong></td>
+                <td style="padding: 5px;">${object.asset_id.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Ngày trả dự kiến:</strong></td>
+                <td style="padding: 5px;"><strong>${format_datetime(object.expected_return_date, dt_format='dd/MM/yyyy HH:mm')}</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <p>Vui lòng chuẩn bị trả tài sản đúng hạn.</p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email nhắc nhở tự động.
+    </p>
+</div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

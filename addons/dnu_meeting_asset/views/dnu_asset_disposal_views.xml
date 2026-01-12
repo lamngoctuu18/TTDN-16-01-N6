@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Disposal Tree View -->
+    <record id="view_asset_disposal_tree" model="ir.ui.view">
+        <field name="name">dnu.asset.disposal.tree</field>
+        <field name="model">dnu.asset.disposal</field>
+        <field name="arch" type="xml">
+            <tree string="Thanh lý tài sản" decoration-info="state=='draft'" decoration-warning="state=='submitted'" decoration-success="state=='done'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="asset_id"/>
+                <field name="disposal_type"/>
+                <field name="reason"/>
+                <field name="original_value" widget="monetary"/>
+                <field name="disposal_value" widget="monetary"/>
+                <field name="loss_gain" widget="monetary"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Disposal Form View -->
+    <record id="view_asset_disposal_form" model="ir.ui.view">
+        <field name="name">dnu.asset.disposal.form</field>
+        <field name="model">dnu.asset.disposal</field>
+        <field name="arch" type="xml">
+            <form string="Thanh lý tài sản">
+                <header>
+                    <button name="action_submit" string="Gửi đề xuất" type="object" class="oe_highlight" states="draft"/>
+                    <button name="action_approve" string="Phê duyệt" type="object" class="oe_highlight" states="submitted"/>
+                    <button name="action_start_execution" string="Bắt đầu thực hiện" type="object" class="oe_highlight" states="approved"/>
+                    <button name="action_complete" string="Hoàn thành" type="object" class="oe_highlight" states="in_progress"/>
+                    <button name="action_cancel" string="Hủy" type="object" states="draft,submitted,approved"/>
+                    <button name="action_print_disposal_report" string="In biên bản" type="object"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="disposal_type"/>
+                            <field name="asset_id" options="{'no_create': True}"/>
+                            <field name="asset_category"/>
+                            <field name="reason"/>
+                        </group>
+                        <group>
+                            <field name="requested_by"/>
+                            <field name="executed_by"/>
+                            <field name="executed_date"/>
+                        </group>
+                    </group>
+                    <group string="Thông tin tài chính">
+                        <group>
+                            <field name="original_value" widget="monetary"/>
+                            <field name="current_value" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="disposal_value" widget="monetary"/>
+                            <field name="loss_gain" widget="monetary" decoration-success="loss_gain &gt; 0" decoration-danger="loss_gain &lt; 0"/>
+                        </group>
+                    </group>
+                    <group string="Đối tác" attrs="{'invisible': [('disposal_type','not in',['sale','donation'])]}">
+                        <field name="partner_id"/>
+                        <field name="contact_info"/>
+                    </group>
+                    <group string="Hợp đồng &amp; Hóa đơn" attrs="{'invisible': [('disposal_type','!=','sale')]}">
+                        <field name="contract_number"/>
+                        <field name="contract_date"/>
+                        <field name="invoice_number"/>
+                    </group>
+                    <notebook>
+                        <page string="Chi tiết lý do">
+                            <field name="reason_detail" placeholder="Mô tả chi tiết lý do thanh lý..."/>
+                        </page>
+                        <page string="Tài liệu">
+                            <group>
+                                <field name="attachment_ids" widget="many2many_binary"/>
+                                <field name="photos" widget="image"/>
+                            </group>
+                        </page>
+                        <page string="Phê duyệt" attrs="{'invisible': [('state','in',['draft'])]}">
+                            <group>
+                                <field name="approved_by"/>
+                                <field name="approved_date"/>
+                            </group>
+                        </page>
+                        <page string="Ghi chú">
+                            <field name="notes" placeholder="Ghi chú về thanh lý..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_asset_disposal" model="ir.actions.act_window">
+        <field name="name">Thanh lý tài sản</field>
+        <field name="res_model">dnu.asset.disposal</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

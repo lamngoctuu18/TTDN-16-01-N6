@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="don_vi_view_form_inherit_vb" model="ir.ui.view">
+            <field name="name">don_vi.form.inherit.vb</field>
+            <field name="model">don_vi</field>
+            <field name="inherit_id" ref="nhan_su.view_don_vi_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="inside">
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_vb_den" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="vb_den_count" widget="statinfo" string="Văn bản đến"/>
+                        </button>
+                        <button name="action_view_vb_den" type="object" class="oe_stat_button" icon="fa-exclamation-triangle">
+                            <field name="vb_den_overdue_count" widget="statinfo" string="Quá hạn"/>
+                        </button>
+                    </div>
+                </xpath>
+                <xpath expr="//group" position="inside">
+                    <field name="vb_den_count" readonly="1"/>
+                    <field name="vb_den_overdue_count" readonly="1"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

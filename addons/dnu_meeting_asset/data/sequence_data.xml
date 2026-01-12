@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Sequence for Asset -->
+        <record id="sequence_dnu_asset" model="ir.sequence">
+            <field name="name">Asset Sequence</field>
+            <field name="code">dnu.asset</field>
+            <field name="prefix">AST</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Assignment -->
+        <record id="sequence_dnu_asset_assignment" model="ir.sequence">
+            <field name="name">Asset Assignment Sequence</field>
+            <field name="code">dnu.asset.assignment</field>
+            <field name="prefix">ASGN</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Maintenance -->
+        <record id="sequence_dnu_asset_maintenance" model="ir.sequence">
+            <field name="name">Asset Maintenance Sequence</field>
+            <field name="code">dnu.asset.maintenance</field>
+            <field name="prefix">MNT</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Meeting Booking -->
+        <record id="sequence_dnu_meeting_booking" model="ir.sequence">
+            <field name="name">Meeting Booking Sequence</field>
+            <field name="code">dnu.meeting.booking</field>
+            <field name="prefix">BOOK</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Lending -->
+        <record id="sequence_dnu_asset_lending" model="ir.sequence">
+            <field name="name">Asset Lending Sequence</field>
+            <field name="code">dnu.asset.lending</field>
+            <field name="prefix">LEND</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Maintenance Schedule -->
+        <record id="sequence_dnu_maintenance_schedule" model="ir.sequence">
+            <field name="name">Maintenance Schedule Sequence</field>
+            <field name="code">dnu.maintenance.schedule</field>
+            <field name="prefix">SCHED</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Depreciation -->
+        <record id="sequence_dnu_asset_depreciation" model="ir.sequence">
+            <field name="name">Asset Depreciation Sequence</field>
+            <field name="code">dnu.asset.depreciation</field>
+            <field name="prefix">DEPR</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Inventory -->
+        <record id="sequence_dnu_asset_inventory" model="ir.sequence">
+            <field name="name">Asset Inventory Sequence</field>
+            <field name="code">dnu.asset.inventory</field>
+            <field name="prefix">INV</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Transfer -->
+        <record id="sequence_dnu_asset_transfer" model="ir.sequence">
+            <field name="name">Asset Transfer Sequence</field>
+            <field name="code">dnu.asset.transfer</field>
+            <field name="prefix">TRF</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Transfer Batch -->
+        <record id="sequence_dnu_asset_transfer_batch" model="ir.sequence">
+            <field name="name">Asset Transfer Batch Sequence</field>
+            <field name="code">dnu.asset.transfer.batch</field>
+            <field name="prefix">TRFB</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Disposal -->
+        <record id="sequence_dnu_asset_disposal" model="ir.sequence">
+            <field name="name">Asset Disposal Sequence</field>
+            <field name="code">dnu.asset.disposal</field>
+            <field name="prefix">DISP</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Disposal Batch -->
+        <record id="sequence_dnu_asset_disposal_batch" model="ir.sequence">
+            <field name="name">Asset Disposal Batch Sequence</field>
+            <field name="code">dnu.asset.disposal.batch</field>
+            <field name="prefix">DISPB</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+    </data>
+</odoo>

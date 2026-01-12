@@ -2,3 +2,7 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_van_ban_den,van_ban_den.van_ban_den,model_van_ban_den,base.group_user,1,1,1,1
 access_van_ban_di,van_ban_di.van_ban_di,model_van_ban_di,base.group_user,1,1,1,1
 access_loai_van_ban,loai_van_ban.loai_van_ban,model_loai_van_ban,base.group_user,1,1,1,1
+access_van_ban_den_manager,van_ban_den.manager,model_van_ban_den,quan_ly_van_ban.group_vb_manager,1,1,1,1
+access_van_ban_den_user,van_ban_den.user,model_van_ban_den,quan_ly_van_ban.group_vb_user,1,0,0,0
+access_van_ban_task_manager,van_ban_task.manager,model_van_ban_task,quan_ly_van_ban.group_vb_manager,1,1,1,1
+access_van_ban_task_user,van_ban_task.user,model_van_ban_task,base.group_user,1,1,1,0

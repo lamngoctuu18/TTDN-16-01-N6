@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ============ ASSET CATEGORIES ============ -->
+        <record id="demo_category_electronics" model="dnu.asset.category">
+            <field name="name">Thiết bị điện tử</field>
+            <field name="code">ELEC</field>
+            <field name="description">Thiết bị điện tử văn phòng</field>
+            <field name="color">1</field>
+        </record>
+
+        <record id="demo_category_furniture" model="dnu.asset.category">
+            <field name="name">Đồ nội thất</field>
+            <field name="code">FURN</field>
+            <field name="description">Bàn ghế, tủ, kệ văn phòng</field>
+            <field name="color">2</field>
+        </record>
+
+        <record id="demo_category_it" model="dnu.asset.category">
+            <field name="name">Thiết bị IT</field>
+            <field name="code">IT</field>
+            <field name="description">Máy tính, laptop, thiết bị mạng</field>
+            <field name="color">3</field>
+        </record>
+
+        <record id="demo_category_audio" model="dnu.asset.category">
+            <field name="name">Thiết bị âm thanh</field>
+            <field name="code">AUDIO</field>
+            <field name="description">Loa, micro, tai nghe hội nghị</field>
+            <field name="color">4</field>
+        </record>
+
+        <record id="demo_category_display" model="dnu.asset.category">
+            <field name="name">Thiết bị trình chiếu</field>
+            <field name="code">DISP</field>
+            <field name="description">Máy chiếu, TV, màn hình lớn</field>
+            <field name="color">5</field>
+        </record>
+
+        <!-- ============ ASSETS - Tài sản dùng chung ============ -->
+        <record id="demo_asset_projector" model="dnu.asset">
+            <field name="name">Máy chiếu Epson EB-2250U</field>
+            <field name="category_id" ref="demo_category_display"/>
+            <field name="serial_number">EPSON2250-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(years=1)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">15000000</field>
+            <field name="warranty_expiry" eval="(DateTime.today() + relativedelta(years=2)).strftime('%Y-%m-%d')"/>
+            <field name="state">available</field>
+            <field name="location">Kho thiết bị tầng 1</field>
+            <field name="description">Máy chiếu di động Full HD, độ sáng 5000 lumens. Phù hợp cho phòng họp lớn.</field>
+        </record>
+
+        <record id="demo_asset_projector_2" model="dnu.asset">
+            <field name="name">Máy chiếu BenQ MH733</field>
+            <field name="category_id" ref="demo_category_display"/>
+            <field name="serial_number">BENQ-MH733-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(months=6)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">18000000</field>
+            <field name="warranty_expiry" eval="(DateTime.today() + relativedelta(years=2)).strftime('%Y-%m-%d')"/>
+            <field name="state">available</field>
+            <field name="location">Kho thiết bị tầng 1</field>
+            <field name="description">Máy chiếu Full HD 4000 lumens cho phòng họp nhỏ và vừa</field>
+        </record>
+
+        <record id="demo_asset_laptop" model="dnu.asset">
+            <field name="name">Laptop Dell Latitude 5420</field>
+            <field name="category_id" ref="demo_category_it"/>
+            <field name="serial_number">DELL-LAT-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(months=6)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">25000000</field>
+            <field name="warranty_expiry" eval="(DateTime.today() + relativedelta(years=2)).strftime('%Y-%m-%d')"/>
+            <field name="state">available</field>
+            <field name="location">Phòng IT</field>
+            <field name="description">Laptop dự phòng Core i5, 16GB RAM, 512GB SSD</field>
+        </record>
+
+        <record id="demo_asset_laptop_2" model="dnu.asset">
+            <field name="name">Laptop HP EliteBook 840 G9</field>
+            <field name="category_id" ref="demo_category_it"/>
+            <field name="serial_number">HP-ELITE-002</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(months=3)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">30000000</field>
+            <field name="warranty_expiry" eval="(DateTime.today() + relativedelta(years=3)).strftime('%Y-%m-%d')"/>
+            <field name="state">available</field>
+            <field name="location">Phòng IT</field>
+            <field name="description">Laptop dự phòng cao cấp Core i7, 32GB RAM, 1TB SSD</field>
+        </record>
+
+        <record id="demo_asset_speaker" model="dnu.asset">
+            <field name="name">Loa hội nghị Jabra Speak 750</field>
+            <field name="category_id" ref="demo_category_audio"/>
+            <field name="serial_number">JABRA-750-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(months=4)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">6500000</field>
+            <field name="state">available</field>
+            <field name="location">Kho thiết bị tầng 1</field>
+            <field name="description">Loa hội nghị Bluetooth, phù hợp cho phòng họp đến 10 người</field>
+        </record>
+
+        <record id="demo_asset_webcam" model="dnu.asset">
+            <field name="name">Webcam Logitech C930e</field>
+            <field name="category_id" ref="demo_category_electronics"/>
+            <field name="serial_number">LOG-C930-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(months=8)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">3500000</field>
+            <field name="state">available</field>
+            <field name="location">Kho thiết bị tầng 1</field>
+            <field name="description">Webcam Full HD với tự động lấy nét và góc rộng 90°</field>
+        </record>
+
+        <record id="demo_asset_pointer" model="dnu.asset">
+            <field name="name">Bút trình chiếu Logitech Spotlight</field>
+            <field name="category_id" ref="demo_category_electronics"/>
+            <field name="serial_number">LOG-SPOT-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(months=2)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">2800000</field>
+            <field name="state">available</field>
+            <field name="location">Kho thiết bị tầng 1</field>
+            <field name="description">Bút trình chiếu không dây với tính năng highlight</field>
+        </record>
+
+        <!-- ============ MEETING ROOMS ============ -->
+        <record id="demo_room_meeting_a" model="dnu.meeting.room">
+            <field name="name">Phòng họp A</field>
+            <field name="code">ROOM-A</field>
+            <field name="capacity">10</field>
+            <field name="location">Tầng 3, Toà A</field>
+            <field name="floor">3</field>
+            <field name="building">Toà A</field>
+            <field name="has_projector" eval="True"/>
+            <field name="has_whiteboard" eval="True"/>
+            <field name="has_video_conference" eval="True"/>
+            <field name="has_wifi" eval="True"/>
+            <field name="has_air_conditioning" eval="True"/>
+            <field name="state">available</field>
+            <field name="allow_booking" eval="True"/>
+            <field name="min_booking_duration">0.5</field>
+            <field name="max_booking_duration">4.0</field>
+            <field name="description">Phòng họp nhỏ phù hợp cho các cuộc họp nhóm, đã trang bị máy chiếu cố định.</field>
+        </record>
+
+        <record id="demo_room_meeting_b" model="dnu.meeting.room">
+            <field name="name">Phòng họp B</field>
+            <field name="code">ROOM-B</field>
+            <field name="capacity">20</field>
+            <field name="location">Tầng 3, Toà A</field>
+            <field name="floor">3</field>
+            <field name="building">Toà A</field>
+            <field name="has_projector" eval="True"/>
+            <field name="has_tv" eval="True"/>
+            <field name="has_whiteboard" eval="True"/>
+            <field name="has_wifi" eval="True"/>
+            <field name="has_air_conditioning" eval="True"/>
+            <field name="state">available</field>
+            <field name="allow_booking" eval="True"/>
+            <field name="description">Phòng họp trung bình với TV 65 inch và máy chiếu</field>
+        </record>
+
+        <record id="demo_room_conference" model="dnu.meeting.room">
+            <field name="name">Phòng hội nghị lớn</field>
+            <field name="code">CONF-MAIN</field>
+            <field name="capacity">50</field>
+            <field name="location">Tầng 4, Toà A</field>
+            <field name="floor">4</field>
+            <field name="building">Toà A</field>
+            <field name="has_projector" eval="True"/>
+            <field name="has_tv" eval="True"/>
+            <field name="has_whiteboard" eval="True"/>
+            <field name="has_video_conference" eval="True"/>
+            <field name="has_wifi" eval="True"/>
+            <field name="has_air_conditioning" eval="True"/>
+            <field name="state">available</field>
+            <field name="allow_booking" eval="True"/>
+            <field name="max_booking_duration">8.0</field>
+            <field name="description">Phòng hội nghị lớn cho các sự kiện quan trọng, họp toàn công ty</field>
+        </record>
+
+        <record id="demo_room_training" model="dnu.meeting.room">
+            <field name="name">Phòng đào tạo</field>
+            <field name="code">TRAIN-01</field>
+            <field name="capacity">30</field>
+            <field name="location">Tầng 2, Toà B</field>
+            <field name="floor">2</field>
+            <field name="building">Toà B</field>
+            <field name="has_projector" eval="True"/>
+            <field name="has_whiteboard" eval="True"/>
+            <field name="has_wifi" eval="True"/>
+            <field name="has_air_conditioning" eval="True"/>
+            <field name="state">available</field>
+            <field name="allow_booking" eval="True"/>
+            <field name="description">Phòng đào tạo với bố trí lớp học, có 15 bàn máy tính</field>
+        </record>
+
+        <record id="demo_room_quick" model="dnu.meeting.room">
+            <field name="name">Phòng trao đổi nhanh</field>
+            <field name="code">QUICK-01</field>
+            <field name="capacity">6</field>
+            <field name="location">Tầng 1, Toà A</field>
+            <field name="floor">1</field>
+            <field name="building">Toà A</field>
+            <field name="has_whiteboard" eval="True"/>
+            <field name="has_wifi" eval="True"/>
+            <field name="has_air_conditioning" eval="True"/>
+            <field name="state">available</field>
+            <field name="allow_booking" eval="True"/>
+            <field name="min_booking_duration">0.25</field>
+            <field name="max_booking_duration">2.0</field>
+            <field name="description">Phòng nhỏ cho các cuộc trao đổi nhanh, họp stand-up</field>
+        </record>
+
+        <!-- ============ MAINTENANCE SCHEDULES ============ -->
+        <record id="demo_schedule_projector" model="dnu.maintenance.schedule">
+            <field name="name">Bảo trì máy chiếu Epson định kỳ</field>
+            <field name="target_type">asset</field>
+            <field name="asset_id" ref="demo_asset_projector"/>
+            <field name="frequency_interval">3</field>
+            <field name="frequency_type">months</field>
+            <field name="start_date" eval="time.strftime('%Y-%m-01')"/>
+            <field name="maintenance_type">preventive</field>
+            <field name="description">Vệ sinh bộ lọc, kiểm tra bóng đèn, cập nhật firmware</field>
+            <field name="estimated_duration">1.0</field>
+            <field name="state">active</field>
+            <field name="send_reminder" eval="True"/>
+        </record>
+
+        <record id="demo_schedule_room_a" model="dnu.maintenance.schedule">
+            <field name="name">Kiểm tra thiết bị phòng họp A</field>
+            <field name="target_type">room</field>
+            <field name="room_id" ref="demo_room_meeting_a"/>
+            <field name="frequency_interval">1</field>
+            <field name="frequency_type">weeks</field>
+            <field name="start_date" eval="time.strftime('%Y-%m-01')"/>
+            <field name="maintenance_type">inspection</field>
+            <field name="description">Kiểm tra tình trạng thiết bị, vệ sinh phòng, bổ sung văn phòng phẩm</field>
+            <field name="estimated_duration">0.5</field>
+            <field name="state">active</field>
+        </record>
+
+        <!-- ============ MEETING BOOKINGS - Đặt phòng họp ============ -->
+        <!-- Đặt phòng hôm nay - buổi sáng -->
+        <record id="demo_booking_today_1" model="dnu.meeting.booking">
+            <field name="room_id" ref="demo_room_meeting_a"/>
+            <field name="subject">Họp nhóm dự án Odoo ERP</field>
+            <field name="start_datetime" eval="datetime.combine(context_today(), datetime.min.time().replace(hour=8, minute=0)) - timedelta(hours=7)"/>
+            <field name="end_datetime" eval="datetime.combine(context_today(), datetime.min.time().replace(hour=10, minute=0)) - timedelta(hours=7)"/>
+            <field name="num_attendees">8</field>
+            <field name="state">confirmed</field>
+            <field name="description">Họp triển khai sprint mới cho dự án ERP</field>
+            <field name="require_projector" eval="True"/>
+        </record>
+
+        <!-- Đặt phòng hôm nay - buổi chiều -->
+        <record id="demo_booking_today_2" model="dnu.meeting.booking">
+            <field name="room_id" ref="demo_room_meeting_b"/>
+            <field name="subject">Họp phòng Marketing - Kế hoạch Q1</field>
+            <field name="start_datetime" eval="datetime.combine(context_today(), datetime.min.time().replace(hour=14, minute=0)) - timedelta(hours=7)"/>
+            <field name="end_datetime" eval="datetime.combine(context_today(), datetime.min.time().replace(hour=16, minute=0)) - timedelta(hours=7)"/>
+            <field name="num_attendees">15</field>
+            <field name="state">confirmed</field>
+            <field name="description">Họp bàn kế hoạch marketing quý 1 năm mới</field>
+            <field name="require_projector" eval="True"/>
+            <field name="require_video_conference" eval="True"/>
+        </record>
+
+        <!-- Đặt phòng hội nghị lớn - sự kiện -->
+        <record id="demo_booking_conference" model="dnu.meeting.booking">
+            <field name="room_id" ref="demo_room_conference"/>
+            <field name="subject">Hội nghị tổng kết năm 2025</field>
+            <field name="start_datetime" eval="datetime.combine(context_today() + timedelta(days=2), datetime.min.time().replace(hour=9, minute=0)) - timedelta(hours=7)"/>
+            <field name="end_datetime" eval="datetime.combine(context_today() + timedelta(days=2), datetime.min.time().replace(hour=12, minute=0)) - timedelta(hours=7)"/>
+            <field name="num_attendees">45</field>
+            <field name="state">confirmed</field>
+            <field name="description">Hội nghị tổng kết hoạt động năm 2025 và phương hướng năm 2026</field>
+            <field name="require_projector" eval="True"/>
+            <field name="require_video_conference" eval="True"/>
+        </record>
+
+        <!-- Đặt phòng đào tạo -->
+        <record id="demo_booking_training" model="dnu.meeting.booking">
+            <field name="room_id" ref="demo_room_training"/>
+            <field name="subject">Đào tạo nhân viên mới - Odoo cơ bản</field>
+            <field name="start_datetime" eval="datetime.combine(context_today() + timedelta(days=1), datetime.min.time().replace(hour=8, minute=30)) - timedelta(hours=7)"/>
+            <field name="end_datetime" eval="datetime.combine(context_today() + timedelta(days=1), datetime.min.time().replace(hour=11, minute=30)) - timedelta(hours=7)"/>
+            <field name="num_attendees">20</field>
+            <field name="state">confirmed</field>
+            <field name="description">Khóa đào tạo sử dụng Odoo cho nhân viên mới vào công ty</field>
+            <field name="require_projector" eval="True"/>
+        </record>
+
+        <!-- Đặt phòng trao đổi nhanh -->
+        <record id="demo_booking_quick" model="dnu.meeting.booking">
+            <field name="room_id" ref="demo_room_quick"/>
+            <field name="subject">Standup meeting hàng ngày</field>
+            <field name="start_datetime" eval="datetime.combine(context_today(), datetime.min.time().replace(hour=9, minute=0)) - timedelta(hours=7)"/>
+            <field name="end_datetime" eval="datetime.combine(context_today(), datetime.min.time().replace(hour=9, minute=30)) - timedelta(hours=7)"/>
+            <field name="num_attendees">5</field>
+            <field name="state">confirmed</field>
+            <field name="description">Họp standup hàng ngày của team Dev</field>
+        </record>
+
+        <!-- Đặt phòng tuần tới -->
+        <record id="demo_booking_next_week" model="dnu.meeting.booking">
+            <field name="room_id" ref="demo_room_meeting_a"/>
+            <field name="subject">Review code sprint 5</field>
+            <field name="start_datetime" eval="(DateTime.now() + relativedelta(days=7)).replace(hour=14, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="end_datetime" eval="(DateTime.now() + relativedelta(days=7)).replace(hour=16, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="num_attendees">6</field>
+            <field name="state">draft</field>
+            <field name="description">Review và merge code cho sprint 5</field>
+        </record>
+
+        <!-- ============ ASSET LENDINGS - Mượn tài sản ============ -->
+        <!-- Đang mượn máy chiếu -->
+        <record id="demo_lending_projector" model="dnu.asset.lending">
+            <field name="asset_id" ref="demo_asset_projector"/>
+            <field name="purpose">Trình bày dự án cho khách hàng tại văn phòng họ</field>
+            <field name="borrow_date" eval="(DateTime.now() - relativedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="expected_return_date" eval="(DateTime.now() + relativedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">borrowed</field>
+        </record>
+
+        <!-- Đang mượn laptop -->
+        <record id="demo_lending_laptop" model="dnu.asset.lending">
+            <field name="asset_id" ref="demo_asset_laptop"/>
+            <field name="purpose">Laptop dự phòng cho nhân viên mới chờ cấp máy</field>
+            <field name="borrow_date" eval="(DateTime.now() - relativedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="expected_return_date" eval="(DateTime.now() + relativedelta(days=4)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">borrowed</field>
+        </record>
+
+        <!-- Mượn quá hạn - loa hội nghị -->
+        <record id="demo_lending_overdue" model="dnu.asset.lending">
+            <field name="asset_id" ref="demo_asset_speaker"/>
+            <field name="purpose">Sử dụng cho cuộc họp online với đối tác</field>
+            <field name="borrow_date" eval="(DateTime.now() - relativedelta(days=5)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="expected_return_date" eval="(DateTime.now() - relativedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">overdue</field>
+        </record>
+
+        <!-- Đã trả - webcam -->
+        <record id="demo_lending_returned" model="dnu.asset.lending">
+            <field name="asset_id" ref="demo_asset_webcam"/>
+            <field name="purpose">Họp online với đối tác Nhật Bản</field>
+            <field name="borrow_date" eval="(DateTime.now() - relativedelta(days=10)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="expected_return_date" eval="(DateTime.now() - relativedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="actual_return_date" eval="(DateTime.now() - relativedelta(days=8)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">returned</field>
+            <field name="return_condition">good</field>
+            <field name="return_notes">Hoạt động tốt, không có vấn đề gì</field>
+        </record>
+
+        <!-- Yêu cầu mượn chờ duyệt -->
+        <record id="demo_lending_pending" model="dnu.asset.lending">
+            <field name="asset_id" ref="demo_asset_pointer"/>
+            <field name="purpose">Thuyết trình tại hội thảo công nghệ</field>
+            <field name="borrow_date" eval="(DateTime.now() + relativedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="expected_return_date" eval="(DateTime.now() + relativedelta(days=5)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">requested</field>
+        </record>
+
+        <!-- ============ ASSET ASSIGNMENTS - Gán tài sản ============ -->
+        <record id="demo_assignment_laptop" model="dnu.asset.assignment">
+            <field name="asset_id" ref="demo_asset_laptop_2"/>
+            <field name="assigned_date" eval="(DateTime.now() - relativedelta(months=2)).strftime('%Y-%m-%d')"/>
+            <field name="notes">Laptop làm việc chính của nhân viên</field>
+            <field name="state">active</field>
+        </record>
+
+        <!-- ============ ASSET MAINTENANCE - Bảo trì tài sản ============ -->
+        <!-- Bảo trì đang chờ -->
+        <record id="demo_maintenance_pending" model="dnu.asset.maintenance">
+            <field name="asset_id" ref="demo_asset_projector_2"/>
+            <field name="maintenance_type">preventive</field>
+            <field name="priority">1</field>
+            <field name="description">Vệ sinh bộ lọc và kiểm tra độ sáng bóng đèn</field>
+            <field name="request_date" eval="time.strftime('%Y-%m-%d')"/>
+            <field name="scheduled_date" eval="(DateTime.now() + relativedelta(days=3)).strftime('%Y-%m-%d')"/>
+            <field name="state">pending</field>
+        </record>
+
+        <!-- Bảo trì đang thực hiện -->
+        <record id="demo_maintenance_in_progress" model="dnu.asset.maintenance">
+            <field name="asset_id" ref="demo_asset_webcam"/>
+            <field name="maintenance_type">corrective</field>
+            <field name="priority">2</field>
+            <field name="description">Sửa lỗi tự động lấy nét không hoạt động</field>
+            <field name="request_date" eval="(DateTime.now() - relativedelta(days=2)).strftime('%Y-%m-%d')"/>
+            <field name="scheduled_date" eval="time.strftime('%Y-%m-%d')"/>
+            <field name="state">in_progress</field>
+        </record>
+
+        <!-- Bảo trì đã hoàn thành -->
+        <record id="demo_maintenance_done" model="dnu.asset.maintenance">
+            <field name="asset_id" ref="demo_asset_projector"/>
+            <field name="maintenance_type">preventive</field>
+            <field name="priority">0</field>
+            <field name="description">Bảo trì định kỳ tháng 12/2025</field>
+            <field name="request_date" eval="(DateTime.now() - relativedelta(days=15)).strftime('%Y-%m-%d')"/>
+            <field name="scheduled_date" eval="(DateTime.now() - relativedelta(days=10)).strftime('%Y-%m-%d')"/>
+            <field name="completion_date" eval="(DateTime.now() - relativedelta(days=10)).strftime('%Y-%m-%d')"/>
+            <field name="state">done</field>
+            <field name="cost">500000</field>
+            <field name="result">Thay bộ lọc mới, vệ sinh lens, kiểm tra độ sáng đạt 4800 lumens</field>
+        </record>
+
+        <!-- ============ THÊM TÀI SẢN VĂN PHÒNG ============ -->
+        <record id="demo_asset_desk_1" model="dnu.asset">
+            <field name="name">Bàn làm việc đứng Ergonomic E1</field>
+            <field name="category_id" ref="demo_category_furniture"/>
+            <field name="serial_number">DESK-ERG-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(years=2)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">12000000</field>
+            <field name="state">in_use</field>
+            <field name="location">Tầng 2, Khu A</field>
+            <field name="description">Bàn làm việc có thể điều chỉnh độ cao, hỗ trợ đứng ngồi linh hoạt</field>
+        </record>
+
+        <record id="demo_asset_chair_1" model="dnu.asset">
+            <field name="name">Ghế công thái học Herman Miller</field>
+            <field name="category_id" ref="demo_category_furniture"/>
+            <field name="serial_number">CHAIR-HM-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(years=1)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">25000000</field>
+            <field name="warranty_expiry" eval="(DateTime.today() + relativedelta(years=11)).strftime('%Y-%m-%d')"/>
+            <field name="state">in_use</field>
+            <field name="location">Tầng 2, Khu A</field>
+            <field name="description">Ghế công thái học cao cấp, bảo hành 12 năm</field>
+        </record>
+
+        <record id="demo_asset_monitor" model="dnu.asset">
+            <field name="name">Màn hình Dell UltraSharp 27" 4K</field>
+            <field name="category_id" ref="demo_category_it"/>
+            <field name="serial_number">DELL-MON-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(months=8)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">15000000</field>
+            <field name="warranty_expiry" eval="(DateTime.today() + relativedelta(years=2)).strftime('%Y-%m-%d')"/>
+            <field name="state">available</field>
+            <field name="location">Kho thiết bị IT</field>
+            <field name="description">Màn hình 27 inch độ phân giải 4K, USB-C, dự phòng</field>
+        </record>
+
+        <record id="demo_asset_tv_conference" model="dnu.asset">
+            <field name="name">TV Samsung 75" cho phòng họp</field>
+            <field name="category_id" ref="demo_category_display"/>
+            <field name="serial_number">SAM-TV75-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(years=1)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">45000000</field>
+            <field name="warranty_expiry" eval="(DateTime.today() + relativedelta(years=1)).strftime('%Y-%m-%d')"/>
+            <field name="state">in_use</field>
+            <field name="location">Phòng hội nghị lớn</field>
+            <field name="description">TV 75 inch 4K, lắp cố định tại phòng hội nghị chính</field>
+        </record>
+
+        <record id="demo_asset_mic_wireless" model="dnu.asset">
+            <field name="name">Bộ micro không dây Shure BLX288</field>
+            <field name="category_id" ref="demo_category_audio"/>
+            <field name="serial_number">SHURE-BLX-001</field>
+            <field name="purchase_date" eval="(DateTime.today() - relativedelta(months=6)).strftime('%Y-%m-%d')"/>
+            <field name="purchase_value">12000000</field>
+            <field name="state">available</field>
+            <field name="location">Kho thiết bị tầng 1</field>
+            <field name="description">Bộ 2 micro không dây cho hội nghị và sự kiện</field>
+        </record>
+
+    </data>
+</odoo>

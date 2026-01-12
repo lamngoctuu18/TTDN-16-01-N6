@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Asset Management Dashboard -->
+    <record id="view_asset_dashboard_kanban" model="ir.ui.view">
+        <field name="name">Asset Dashboard</field>
+        <field name="model">dnu.asset.dashboard</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_dashboard o_asset_kanban" create="false">
+                <field name="total_assets"/>
+                <field name="total_value"/>
+                <field name="available_assets"/>
+                <field name="assigned_assets"/>
+                <field name="maintenance_assets"/>
+                <field name="disposed_assets"/>
+                <field name="pending_lendings"/>
+                <field name="active_lendings"/>
+                <field name="overdue_lendings"/>
+                <field name="total_depreciation"/>
+                <field name="current_total_value"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="container o_kanban_card_content">
+                            <div class="row">
+                                <!-- Tổng quan tài sản -->
+                                <div class="col-md-12 mb-3">
+                                    <h3>Tổng quan Tài sản</h3>
+                                </div>
+                                <div class="col-md-3">
+                                    <a type="action" name="%(action_dnu_asset)d" class="d-block">
+                                        <div class="card bg-primary text-white">
+                                            <div class="card-body text-center">
+                                                <h1><t t-esc="record.total_assets.value"/></h1>
+                                                <p>Tổng tài sản</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a type="action" name="%(action_dnu_asset)d" context="{'search_default_available': 1}" class="d-block">
+                                        <div class="card bg-success text-white">
+                                            <div class="card-body text-center">
+                                                <h1><t t-esc="record.available_assets.value"/></h1>
+                                                <p>Sẵn sàng</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a type="action" name="%(action_dnu_asset)d" context="{'search_default_assigned': 1}" class="d-block">
+                                        <div class="card bg-info text-white">
+                                            <div class="card-body text-center">
+                                                <h1><t t-esc="record.assigned_assets.value"/></h1>
+                                                <p>Đã gán</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a type="action" name="%(action_dnu_asset)d" context="{'search_default_maintenance': 1}" class="d-block">
+                                        <div class="card bg-warning text-white">
+                                            <div class="card-body text-center">
+                                                <h1><t t-esc="record.maintenance_assets.value"/></h1>
+                                                <p>Bảo trì</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Mượn trả -->
+                                <div class="col-md-12 mb-3">
+                                    <h3>Tình hình Mượn trả</h3>
+                                </div>
+                                <div class="col-md-4">
+                                    <a type="action" name="%(action_dnu_asset_lending)d" context="{'search_default_pending': 1}" class="d-block">
+                                        <div class="card border-warning">
+                                            <div class="card-body text-center">
+                                                <h2><t t-esc="record.pending_lendings.value"/></h2>
+                                                <p>Chờ duyệt</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a type="action" name="%(action_dnu_asset_lending)d" context="{'search_default_approved': 1}" class="d-block">
+                                        <div class="card border-success">
+                                            <div class="card-body text-center">
+                                                <h2><t t-esc="record.active_lendings.value"/></h2>
+                                                <p>Đang mượn</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a type="action" name="%(action_dnu_asset_lending)d" context="{'search_default_overdue': 1}" class="d-block">
+                                        <div class="card border-danger">
+                                            <div class="card-body text-center">
+                                                <h2><t t-esc="record.overdue_lendings.value"/></h2>
+                                                <p>Quá hạn</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Khấu hao -->
+                                <div class="col-md-12 mb-3">
+                                    <h3>Khấu hao &amp; Giá trị</h3>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h4>Tổng khấu hao</h4>
+                                            <h2><t t-esc="record.total_depreciation.value"/> VNĐ</h2>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h4>Giá trị hiện tại</h4>
+                                            <h2><t t-esc="record.current_total_value.value"/> VNĐ</h2>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Quick Actions -->
+                                <div class="col-md-12 mb-3">
+                                    <h3>Thao tác nhanh</h3>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="action" name="%(action_dnu_asset_lending)d" class="btn btn-primary btn-block">
+                                        <i class="fa fa-hand-paper-o"/> Mượn tài sản
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="action" name="%(action_asset_depreciation)d" class="btn btn-info btn-block">
+                                        <i class="fa fa-line-chart"/> Khấu hao
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="action" name="%(action_asset_inventory)d" class="btn btn-warning btn-block">
+                                        <i class="fa fa-clipboard"/> Kiểm kê
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="action" name="%(action_asset_transfer)d" class="btn btn-success btn-block">
+                                        <i class="fa fa-exchange"/> Luân chuyển
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Dashboard Action -->
+    <record id="action_asset_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard Quản lý Tài sản</field>
+        <field name="res_model">dnu.asset.dashboard</field>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_asset_dashboard_kanban"/>
+    </record>
+
+</odoo>

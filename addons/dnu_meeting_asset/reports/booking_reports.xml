@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ============ BOOKING PIVOT VIEW ============ -->
+        <record id="view_dnu_booking_pivot" model="ir.ui.view">
+            <field name="name">dnu.meeting.booking.pivot</field>
+            <field name="model">dnu.meeting.booking</field>
+            <field name="arch" type="xml">
+                <pivot string="Thống kê đặt phòng" display_quantity="true" sample="1">
+                    <field name="room_id" type="row"/>
+                    <field name="state" type="col"/>
+                    <field name="duration" type="measure" string="Thời lượng (giờ)"/>
+                    <field name="num_attendees" type="measure" string="Số người dự kiến"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- ============ BOOKING GRAPH VIEW ============ -->
+        <record id="view_dnu_booking_graph" model="ir.ui.view">
+            <field name="name">dnu.meeting.booking.graph</field>
+            <field name="model">dnu.meeting.booking</field>
+            <field name="arch" type="xml">
+                <graph string="Thống kê đặt phòng" type="bar" stacked="True" sample="1">
+                    <field name="start_datetime" interval="week"/>
+                    <field name="room_id" type="col"/>
+                    <field name="duration" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- ============ BOOKING SUMMARY ACTION ============ -->
+        <record id="action_report_booking_summary" model="ir.actions.act_window">
+            <field name="name">Báo cáo tổng hợp đặt phòng</field>
+            <field name="res_model">dnu.meeting.booking</field>
+            <field name="view_mode">pivot,graph,tree</field>
+            <field name="domain">[('state', 'in', ['confirmed', 'in_progress', 'done'])]</field>
+            <field name="context">{
+                'group_by': ['room_id', 'state'],
+                'pivot_measures': ['duration', 'num_attendees'],
+                'pivot_row_groupby': ['room_id'],
+                'pivot_column_groupby': ['state']
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Đặt phòng họp đầu tiên
+                </p>
+                <p>
+                    Báo cáo sẽ hiển thị thống kê đặt phòng theo phòng họp và trạng thái.
+                </p>
+            </field>
+        </record>
+
+        <!-- ============ BOOKING PDF REPORT ============ -->
+        <record id="action_report_booking_pdf" model="ir.actions.report">
+            <field name="name">Phiếu đặt phòng</field>
+            <field name="model">dnu.meeting.booking</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">dnu_meeting_asset.report_booking_card</field>
+            <field name="report_file">dnu_meeting_asset.report_booking_card</field>
+            <field name="print_report_name">'Đặt phòng - %s' % object.name</field>
+            <field name="binding_model_id" ref="model_dnu_meeting_booking"/>
+            <field name="binding_type">report</field>
+        </record>
+
+        <record id="report_booking_card" model="ir.ui.view">
+            <field name="name">report.dnu_meeting_asset.report_booking_card</field>
+            <field name="model">dnu.meeting.booking</field>
+            <field name="type">qweb</field>
+            <field name="arch" type="xml">
+                <t t-name="dnu_meeting_asset.report_booking_card">
+                    <t t-call="web.html_container">
+                        <t t-foreach="docs" t-as="doc">
+                            <t t-call="web.external_layout">
+                                <div class="page">
+                                    <h2 class="text-center">PHIẾU ĐẶT PHÒNG HỌP</h2>
+                                    <h4 class="text-center text-muted"><t t-esc="doc.name"/></h4>
+                                    <hr/>
+                                    
+                                    <div class="row mt-4">
+                                        <div class="col-12">
+                                            <table class="table table-bordered">
+                                                <tr>
+                                                    <th style="width: 25%; background-color: #f5f5f5;">Chủ đề cuộc họp</th>
+                                                    <td colspan="3"><strong><t t-esc="doc.subject"/></strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <th style="background-color: #f5f5f5;">Phòng họp</th>
+                                                    <td><t t-esc="doc.room_id.name"/></td>
+                                                    <th style="background-color: #f5f5f5;">Vị trí</th>
+                                                    <td><t t-esc="doc.room_id.location or '-'"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <th style="background-color: #f5f5f5;">Người tổ chức</th>
+                                                    <td><t t-esc="doc.organizer_id.name"/></td>
+                                                    <th style="background-color: #f5f5f5;">Phòng ban</th>
+                                                    <td><t t-esc="doc.department_id.name or '-'"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <th style="background-color: #f5f5f5;">Thời gian bắt đầu</th>
+                                                    <td><t t-esc="doc.start_datetime" t-options='{"widget": "datetime", "format": "dd/MM/yyyy HH:mm"}'/></td>
+                                                    <th style="background-color: #f5f5f5;">Thời gian kết thúc</th>
+                                                    <td><t t-esc="doc.end_datetime" t-options='{"widget": "datetime", "format": "dd/MM/yyyy HH:mm"}'/></td>
+                                                </tr>
+                                                <tr>
+                                                    <th style="background-color: #f5f5f5;">Thời lượng</th>
+                                                    <td><t t-esc="'{:.1f}'.format(doc.duration)"/> giờ</td>
+                                                    <th style="background-color: #f5f5f5;">Số người tham dự</th>
+                                                    <td><t t-esc="doc.num_attendees"/> người</td>
+                                                </tr>
+                                                <tr>
+                                                    <th style="background-color: #f5f5f5;">Trạng thái</th>
+                                                    <td colspan="3">
+                                                        <span t-if="doc.state == 'draft'" class="badge badge-secondary">Nháp</span>
+                                                        <span t-if="doc.state == 'submitted'" class="badge badge-info">Chờ duyệt</span>
+                                                        <span t-if="doc.state == 'confirmed'" class="badge badge-primary">Đã xác nhận</span>
+                                                        <span t-if="doc.state == 'in_progress'" class="badge badge-warning">Đang diễn ra</span>
+                                                        <span t-if="doc.state == 'done'" class="badge badge-success">Hoàn thành</span>
+                                                        <span t-if="doc.state == 'cancelled'" class="badge badge-danger">Đã hủy</span>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <t t-if="doc.attendee_ids">
+                                        <h5 class="mt-4">Danh sách người tham dự</h5>
+                                        <table class="table table-sm table-bordered">
+                                            <thead>
+                                                <tr style="background-color: #f5f5f5;">
+                                                    <th>STT</th>
+                                                    <th>Họ và tên</th>
+                                                    <th>Phòng ban</th>
+                                                    <th>Email</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="doc.attendee_ids" t-as="attendee">
+                                                    <tr>
+                                                        <td><t t-esc="attendee_index + 1"/></td>
+                                                        <td><t t-esc="attendee.name"/></td>
+                                                        <td><t t-esc="attendee.department_id.name or '-'"/></td>
+                                                        <td><t t-esc="attendee.work_email or '-'"/></td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </t>
+                                    
+                                    <t t-if="doc.required_equipment_ids">
+                                        <h5 class="mt-4">Thiết bị yêu cầu</h5>
+                                        <ul>
+                                            <t t-foreach="doc.required_equipment_ids" t-as="equipment">
+                                                <li><t t-esc="equipment.name"/> (<t t-esc="equipment.code"/>)</li>
+                                            </t>
+                                        </ul>
+                                    </t>
+                                    
+                                    <t t-if="doc.description">
+                                        <h5 class="mt-4">Mô tả</h5>
+                                        <p><t t-raw="doc.description"/></p>
+                                    </t>
+                                    
+                                    <div class="row mt-5">
+                                        <div class="col-6 text-center">
+                                            <p><strong>Người tổ chức</strong></p>
+                                            <br/><br/>
+                                            <p><t t-esc="doc.organizer_id.name"/></p>
+                                        </div>
+                                        <div class="col-6 text-center">
+                                            <p><strong>Người duyệt</strong></p>
+                                            <br/><br/>
+                                            <p>___________________</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-5">
+                                        <p class="text-muted small text-right">
+                                            In ngày: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                                        </p>
+                                    </div>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+                </t>
+            </field>
+        </record>
+
+        <!-- ============ ROOM USAGE REPORT ============ -->
+        <record id="view_dnu_room_usage_graph" model="ir.ui.view">
+            <field name="name">dnu.meeting.room.usage.graph</field>
+            <field name="model">dnu.meeting.booking</field>
+            <field name="arch" type="xml">
+                <graph string="Thống kê sử dụng phòng" type="pie">
+                    <field name="room_id"/>
+                    <field name="duration" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <record id="action_report_room_usage" model="ir.actions.act_window">
+            <field name="name">Thống kê sử dụng phòng</field>
+            <field name="res_model">dnu.meeting.booking</field>
+            <field name="view_mode">graph,pivot,tree</field>
+            <field name="domain">[('state', 'in', ['confirmed', 'in_progress', 'done'])]</field>
+            <field name="context">{'search_default_group_room': 1}</field>
+        </record>
+
+    </data>
+</odoo>

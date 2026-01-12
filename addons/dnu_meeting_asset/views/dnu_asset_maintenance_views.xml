@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Kanban View -->
+        <record id="view_dnu_asset_maintenance_kanban" model="ir.ui.view">
+            <field name="name">dnu.asset.maintenance.kanban</field>
+            <field name="model">dnu.asset.maintenance</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="state" class="o_kanban_small_column">
+                    <field name="name"/>
+                    <field name="asset_id"/>
+                    <field name="priority"/>
+                    <field name="state"/>
+                    <field name="assigned_tech_id"/>
+                    <field name="color"/>
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div t-attf-class="#{kanban_color(record.color.raw_value)} oe_kanban_global_click">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                        <div class="o_kanban_record_subtitle">
+                                            <field name="asset_id"/>
+                                        </div>
+                                    </div>
+                                    <field name="priority" widget="priority"/>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <field name="description"/>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="date_reported" widget="date"/>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="assigned_tech_id"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Tree View -->
+        <record id="view_dnu_asset_maintenance_tree" model="ir.ui.view">
+            <field name="name">dnu.asset.maintenance.tree</field>
+            <field name="model">dnu.asset.maintenance</field>
+            <field name="arch" type="xml">
+                <tree string="Bảo trì" decoration-danger="priority=='urgent'" decoration-warning="priority=='high'">
+                    <field name="name"/>
+                    <field name="asset_id"/>
+                    <field name="maintenance_type"/>
+                    <field name="reporter_name" string="Người báo cáo"/>
+                    <field name="nhan_vien_bao_cao_id" optional="hide"/>
+                    <field name="reporter_id" optional="hide"/>
+                    <field name="date_reported"/>
+                    <field name="tech_name" string="Kỹ thuật viên"/>
+                    <field name="nhan_vien_ky_thuat_id" optional="hide"/>
+                    <field name="assigned_tech_id" optional="hide"/>
+                    <field name="priority" widget="priority"/>
+                    <field name="state" widget="badge" decoration-info="state=='pending'" decoration-warning="state=='in_progress'" decoration-success="state=='done'"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_dnu_asset_maintenance_form" model="ir.ui.view">
+            <field name="name">dnu.asset.maintenance.form</field>
+            <field name="model">dnu.asset.maintenance</field>
+            <field name="arch" type="xml">
+                <form string="Bảo trì">
+                    <header>
+                        <button name="action_submit" string="Gửi yêu cầu" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                        <button name="action_start" string="Bắt đầu" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'pending')]}"/>
+                        <button name="action_done" string="Hoàn thành" type="object" class="btn-success" attrs="{'invisible': [('state', '!=', 'in_progress')]}"/>
+                        <button name="action_cancel" string="Hủy" type="object" attrs="{'invisible': [('state', 'in', ['done', 'cancelled'])]}"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,pending,in_progress,done"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <field name="priority" widget="priority"/>
+                        </div>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group string="Thông tin tài sản">
+                                <field name="asset_id" options="{'no_create': True}"/>
+                                <field name="maintenance_type"/>
+                                <field name="date_reported"/>
+                            </group>
+                            <group string="Người báo cáo">
+                                <field name="nhan_vien_bao_cao_id" options="{'no_quick_create': True}" placeholder="Chọn từ hệ thống Nhân sự"/>
+                                <label for="reporter_id" string="-- Hoặc --"/>
+                                <field name="reporter_id" placeholder="Chọn từ HR"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Kỹ thuật viên xử lý">
+                                <field name="nhan_vien_ky_thuat_id" options="{'no_quick_create': True}" placeholder="Chọn từ hệ thống Nhân sự"/>
+                                <label for="assigned_tech_id" string="-- Hoặc --"/>
+                                <field name="assigned_tech_id" placeholder="Chọn từ HR"/>
+                            </group>
+                            <group string="Lịch trình">
+                                <field name="date_scheduled"/>
+                                <field name="date_started" attrs="{'invisible': [('state', 'in', ['draft', 'pending'])]}"/>
+                                <field name="date_completed" attrs="{'invisible': [('state', '!=', 'done')]}"/>
+                                <field name="duration_days" attrs="{'invisible': [('state', '!=', 'done')]}"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="description" placeholder="Mô tả sự cố/yêu cầu bảo trì..."/>
+                        </group>
+                        <group string="Chi phí">
+                            <group>
+                                <field name="cost_estimate"/>
+                            </group>
+                            <group>
+                                <field name="cost_actual" attrs="{'invisible': [('state', '!=', 'done')]}"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Công việc đã làm" attrs="{'invisible': [('state', 'in', ['draft', 'pending'])]}">
+                                <field name="work_done" placeholder="Mô tả công việc đã thực hiện..."/>
+                            </page>
+                            <page string="Vật tư sử dụng" attrs="{'invisible': [('state', 'in', ['draft', 'pending'])]}">
+                                <field name="parts_used" placeholder="Danh sách vật tư/linh kiện đã sử dụng..."/>
+                            </page>
+                            <page string="Tài liệu đính kèm">
+                                <field name="attachment_ids" widget="many2many_binary"/>
+                            </page>
+                            <page string="Ghi chú">
+                                <field name="notes"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_dnu_asset_maintenance" model="ir.actions.act_window">
+            <field name="name">Yêu cầu bảo trì</field>
+            <field name="res_model">dnu.asset.maintenance</field>
+            <field name="view_mode">kanban,tree,form</field>
+            <field name="context">{'search_default_pending': 1}</field>
+        </record>
+
+    </data>
+</odoo>

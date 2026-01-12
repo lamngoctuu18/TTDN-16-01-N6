@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Main Menu -->
+        <menuitem id="menu_dnu_main"
+                  name="Tài sản &amp; Phòng họp"
+                  sequence="10"
+                  web_icon="dnu_meeting_asset,static/description/icon.png"/>
+
+        <!-- Dashboard -->
+        <menuitem id="menu_dnu_dashboard"
+                  name="Bảng điều khiển"
+                  parent="menu_dnu_main"
+                  sequence="1"/>
+
+        <menuitem id="menu_dnu_dashboard_today"
+                  name="Đặt phòng hôm nay"
+                  parent="menu_dnu_dashboard"
+                  action="action_dnu_dashboard_today_bookings"
+                  sequence="1"/>
+
+        <menuitem id="menu_dnu_dashboard_week"
+                  name="Đặt phòng tuần này"
+                  parent="menu_dnu_dashboard"
+                  action="action_dnu_dashboard_week_bookings"
+                  sequence="2"/>
+
+        <menuitem id="menu_dnu_dashboard_month"
+                  name="Đặt phòng tháng này"
+                  parent="menu_dnu_dashboard"
+                  action="action_dnu_dashboard_month_bookings"
+                  sequence="3"/>
+
+        <menuitem id="menu_dnu_dashboard_pending"
+                  name="Chờ duyệt"
+                  parent="menu_dnu_dashboard"
+                  action="action_dnu_dashboard_pending_approval"
+                  sequence="4"
+                  groups="group_facility_staff"/>
+
+        <!-- Quick Actions -->
+        <menuitem id="menu_dnu_quick_booking"
+                  name="Đặt phòng nhanh"
+                  parent="menu_dnu_main"
+                  action="action_quick_booking_wizard"
+                  sequence="2"/>
+
+        <!-- Asset Management -->
+        <menuitem id="menu_dnu_asset"
+                  name="Quản lý tài sản"
+                  parent="menu_dnu_main"
+                  sequence="10"/>
+
+        <menuitem id="menu_dnu_asset_asset"
+                  name="Tài sản"
+                  parent="menu_dnu_asset"
+                  action="action_dnu_asset"
+                  sequence="10"/>
+
+        <menuitem id="menu_dnu_asset_category"
+                  name="Danh mục"
+                  parent="menu_dnu_asset"
+                  action="action_dnu_asset_category"
+                  sequence="20"/>
+
+        <menuitem id="menu_dnu_asset_assignment"
+                  name="Lịch sử gán"
+                  parent="menu_dnu_asset"
+                  action="action_dnu_asset_assignment"
+                  sequence="30"/>
+
+        <menuitem id="menu_dnu_asset_lending"
+                  name="Mượn tài sản"
+                  parent="menu_dnu_asset"
+                  action="action_dnu_asset_lending"
+                  sequence="35"/>
+
+        <menuitem id="menu_dnu_asset_maintenance"
+                  name="Bảo trì"
+                  parent="menu_dnu_asset"
+                  action="action_dnu_asset_maintenance"
+                  sequence="40"/>
+
+        <menuitem id="menu_dnu_maintenance_schedule"
+                  name="Lịch bảo trì định kỳ"
+                  parent="menu_dnu_asset"
+                  action="action_dnu_maintenance_schedule"
+                  sequence="45"/>
+
+        <menuitem id="menu_dnu_asset_depreciation"
+                  name="Khấu hao"
+                  parent="menu_dnu_asset"
+                  action="action_asset_depreciation"
+                  sequence="50"/>
+
+        <menuitem id="menu_dnu_asset_inventory"
+                  name="Kiểm kê"
+                  parent="menu_dnu_asset"
+                  action="action_asset_inventory"
+                  sequence="60"/>
+
+        <menuitem id="menu_dnu_asset_transfer"
+                  name="Luân chuyển"
+                  parent="menu_dnu_asset"
+                  action="action_asset_transfer"
+                  sequence="70"/>
+
+        <menuitem id="menu_dnu_asset_disposal"
+                  name="Thanh lý"
+                  parent="menu_dnu_asset"
+                  action="action_asset_disposal"
+                  sequence="80"/>
+
+        <menuitem id="menu_dnu_asset_dashboard"
+                  name="Dashboard Tài sản"
+                  parent="menu_dnu_asset"
+                  action="action_asset_dashboard"
+                  sequence="5"/>
+
+        <!-- Meeting Management -->
+        <menuitem id="menu_dnu_meeting"
+                  name="Quản lý phòng họp"
+                  parent="menu_dnu_main"
+                  sequence="20"/>
+
+        <menuitem id="menu_dnu_meeting_booking"
+                  name="Đặt phòng"
+                  parent="menu_dnu_meeting"
+                  action="action_dnu_meeting_booking"
+                  sequence="10"/>
+        <menuitem id="menu_dnu_meeting_approval"
+                  name="Duyệt đặt phòng"
+                  parent="menu_dnu_meeting"
+                  action="action_dnu_meeting_booking_approval"
+                  sequence="15"
+                  groups="group_facility_staff"/>
+        <menuitem id="menu_dnu_meeting_room"
+                  name="Phòng họp"
+                  parent="menu_dnu_meeting"
+                  action="action_dnu_meeting_room"
+                  sequence="20"/>
+
+        <!-- Reports -->
+        <menuitem id="menu_dnu_reports"
+                  name="Báo cáo"
+                  parent="menu_dnu_main"
+                  sequence="30"/>
+
+        <menuitem id="menu_dnu_report_asset"
+                  name="Báo cáo tài sản"
+                  parent="menu_dnu_reports"
+                  action="action_report_asset_summary"
+                  sequence="10"/>
+
+        <menuitem id="menu_dnu_report_booking"
+                  name="Báo cáo đặt phòng"
+                  parent="menu_dnu_reports"
+                  action="action_report_booking_summary"
+                  sequence="20"/>
+
+        <!-- Configuration -->
+        <menuitem id="menu_dnu_config"
+                  name="Cấu hình"
+                  parent="menu_dnu_main"
+                  sequence="100"
+                  groups="group_facility_staff"/>
+
+    </data>
+</odoo>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Tree View -->
+        <record id="view_dnu_asset_category_tree" model="ir.ui.view">
+            <field name="name">dnu.asset.category.tree</field>
+            <field name="model">dnu.asset.category</field>
+            <field name="arch" type="xml">
+                <tree string="Danh mục tài sản">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="parent_id"/>
+                    <field name="asset_count"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_dnu_asset_category_form" model="ir.ui.view">
+            <field name="name">dnu.asset.category.form</field>
+            <field name="model">dnu.asset.category</field>
+            <field name="arch" type="xml">
+                <form string="Danh mục tài sản">
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="%(action_dnu_asset)d" 
+                                    type="action"
+                                    class="oe_stat_button" 
+                                    icon="fa-cubes"
+                                    context="{'search_default_category_id': active_id}">
+                                <field name="asset_count" widget="statinfo" string="Tài sản"/>
+                            </button>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="code"/>
+                                <field name="parent_id"/>
+                            </group>
+                            <group>
+                                <field name="active"/>
+                                <field name="color" widget="color_picker"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="description" placeholder="Mô tả danh mục..."/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_dnu_asset_category" model="ir.actions.act_window">
+            <field name="name">Danh mục tài sản</field>
+            <field name="res_model">dnu.asset.category</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo danh mục tài sản mới
+                </p>
+                <p>
+                    Danh mục giúp phân loại và quản lý tài sản hiệu quả hơn.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

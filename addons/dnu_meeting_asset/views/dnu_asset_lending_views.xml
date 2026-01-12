@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Kanban View -->
+        <record id="view_dnu_asset_lending_kanban" model="ir.ui.view">
+            <field name="name">dnu.asset.lending.kanban</field>
+            <field name="model">dnu.asset.lending</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="state" class="o_kanban_small_column">
+                    <field name="name"/>
+                    <field name="asset_id"/>
+                    <field name="borrower_id"/>
+                    <field name="state"/>
+                    <field name="is_overdue"/>
+                    <field name="color"/>
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div t-attf-class="#{kanban_color(record.color.raw_value)} oe_kanban_global_click">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                        <span class="badge badge-danger" t-if="record.is_overdue.raw_value">
+                                            <i class="fa fa-exclamation-triangle"/> Quá hạn
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <div><strong>Tài sản:</strong> <field name="asset_id"/></div>
+                                    <div><strong>Người mượn:</strong> <field name="borrower_id"/></div>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="date_borrow" widget="date"/>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="borrower_id" widget="many2one_avatar_user"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Tree View -->
+        <record id="view_dnu_asset_lending_tree" model="ir.ui.view">
+            <field name="name">dnu.asset.lending.tree</field>
+            <field name="model">dnu.asset.lending</field>
+            <field name="arch" type="xml">
+                <tree string="Mượn tài sản" decoration-danger="is_overdue" decoration-muted="state=='cancelled'">
+                    <field name="name"/>
+                    <field name="asset_id"/>
+                    <field name="borrower_name" string="Người mượn"/>
+                    <field name="nhan_vien_muon_id" optional="hide"/>
+                    <field name="borrower_id" optional="hide"/>
+                    <field name="department_id"/>
+                    <field name="purpose"/>
+                    <field name="date_borrow"/>
+                    <field name="date_expected_return"/>
+                    <field name="date_actual_return"/>
+                    <field name="is_overdue" invisible="1"/>
+                    <field name="state" widget="badge" 
+                           decoration-info="state=='approved'" 
+                           decoration-warning="state=='borrowed'"
+                           decoration-danger="state=='overdue'"
+                           decoration-success="state=='returned'"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="view_dnu_asset_lending_form" model="ir.ui.view">
+            <field name="name">dnu.asset.lending.form</field>
+            <field name="model">dnu.asset.lending</field>
+            <field name="arch" type="xml">
+                <form string="Mượn tài sản">
+                    <header>
+                        <button name="action_request" string="Gửi yêu cầu" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                        <button name="action_approve" string="Duyệt" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'requested')]}" groups="dnu_meeting_asset.group_asset_manager"/>
+                        <button name="action_reject" string="Từ chối" type="object" attrs="{'invisible': [('state', '!=', 'requested')]}" groups="dnu_meeting_asset.group_asset_manager"/>
+                        <button name="action_lend" string="Giao tài sản" type="object" class="btn-success" attrs="{'invisible': [('state', '!=', 'approved')]}" groups="dnu_meeting_asset.group_asset_manager"/>
+                        <button name="action_return" string="Trả tài sản" type="object" class="btn-warning" attrs="{'invisible': [('state', 'not in', ['borrowed', 'overdue'])]}"/>
+                        <button name="action_cancel" string="Hủy" type="object" attrs="{'invisible': [('state', 'in', ['borrowed', 'returned', 'cancelled'])]}"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,requested,approved,borrowed,returned"/>
+                    </header>
+                    <sheet>
+                        <div class="alert alert-danger" role="alert" attrs="{'invisible': [('is_overdue', '=', False)]}">
+                            <strong><i class="fa fa-exclamation-triangle"/> Cảnh báo:</strong> Phiếu mượn này đã quá hạn trả!
+                        </div>
+                        <field name="is_overdue" invisible="1"/>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group string="Thông tin mượn">
+                                <field name="asset_id" options="{'no_create': True}" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                                <field name="nhan_vien_muon_id" attrs="{'readonly': [('state', '!=', 'draft')]}" options="{'no_quick_create': True}" placeholder="Chọn từ hệ thống Nhân sự"/>
+                                <label for="borrower_id" string="-- Hoặc --"/>
+                                <field name="borrower_id" attrs="{'readonly': [('state', '!=', 'draft')]}" placeholder="Chọn từ HR"/>
+                                <field name="department_id" attrs="{'invisible': [('borrower_id', '=', False)]}"/>
+                                <field name="booking_id"/>
+                            </group>
+                            <group string="Thời gian">
+                                <field name="date_borrow" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                                <field name="date_expected_return" attrs="{'readonly': [('state', 'not in', ['draft', 'requested'])]}"/>
+                                <field name="date_actual_return" attrs="{'invisible': [('state', 'not in', ['returned'])]}"/>
+                                <field name="duration_hours"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Mục đích">
+                                <field name="purpose" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                                <field name="location"/>
+                            </group>
+                            <group string="Xử lý" attrs="{'invisible': [('state', 'in', ['draft', 'requested'])]}">
+                                <field name="approved_by" readonly="1"/>
+                                <field name="returned_to" readonly="1" attrs="{'invisible': [('state', '!=', 'returned')]}"/>
+                            </group>
+                        </group>
+                        <field name="purpose_note" placeholder="Chi tiết mục đích sử dụng..." attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                        
+                        <group string="Thông tin trả" attrs="{'invisible': [('state', 'not in', ['returned'])]}">
+                            <group>
+                                <field name="return_condition"/>
+                            </group>
+                            <group>
+                                <field name="return_notes"/>
+                            </group>
+                        </group>
+                        
+                        <field name="notes" placeholder="Ghi chú khác..."/>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+            </field>
+        </record>
+
+        <!-- Search View -->
+        <record id="view_dnu_asset_lending_search" model="ir.ui.view">
+            <field name="name">dnu.asset.lending.search</field>
+            <field name="model">dnu.asset.lending</field>
+            <field name="arch" type="xml">
+                <search string="Mượn tài sản">
+                    <field name="name"/>
+                    <field name="asset_id"/>
+                    <field name="borrower_id"/>
+                    <separator/>
+                    <filter string="Yêu cầu của tôi" name="my_requests" domain="[('borrower_id.user_id', '=', uid)]"/>
+                    <separator/>
+                    <filter string="Chờ duyệt" name="requested" domain="[('state', '=', 'requested')]"/>
+                    <filter string="Đang mượn" name="borrowed" domain="[('state', '=', 'borrowed')]"/>
+                    <filter string="Quá hạn" name="overdue" domain="[('is_overdue', '=', True)]"/>
+                    <filter string="Đã trả" name="returned" domain="[('state', '=', 'returned')]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Tài sản" name="group_asset" context="{'group_by': 'asset_id'}"/>
+                        <filter string="Người mượn" name="group_borrower" context="{'group_by': 'borrower_id'}"/>
+                        <filter string="Trạng thái" name="group_state" context="{'group_by': 'state'}"/>
+                        <filter string="Mục đích" name="group_purpose" context="{'group_by': 'purpose'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Actions -->
+        <record id="action_dnu_asset_lending" model="ir.actions.act_window">
+            <field name="name">Mượn tài sản</field>
+            <field name="res_model">dnu.asset.lending</field>
+            <field name="view_mode">kanban,tree,form</field>
+            <field name="search_view_id" ref="view_dnu_asset_lending_search"/>
+            <field name="context">{'search_default_borrowed': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Tạo yêu cầu mượn tài sản
+                </p>
+                <p>
+                    Mượn tài sản dùng chung như máy chiếu di động, laptop dự phòng...
+                </p>
+            </field>
+        </record>
+
+        <record id="action_dnu_asset_lending_my" model="ir.actions.act_window">
+            <field name="name">Yêu cầu mượn của tôi</field>
+            <field name="res_model">dnu.asset.lending</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_dnu_asset_lending_search"/>
+            <field name="context">{'search_default_my_requests': 1}</field>
+        </record>
+
+    </data>
+</odoo>

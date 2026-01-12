@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Cron: Auto Checkout -->
+        <record id="cron_auto_checkout_booking" model="ir.cron">
+            <field name="name">Tự động check-out đặt phòng</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_auto_checkout()</field>
+            <field name="interval_number">15</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Cron: Send Reminders -->
+        <record id="cron_send_booking_reminders" model="ir.cron">
+            <field name="name">Gửi nhắc nhở cuộc họp</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_reminders()</field>
+            <field name="interval_number">10</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Cron: Check Overdue Lending -->
+        <record id="cron_check_overdue_lending" model="ir.cron">
+            <field name="name">Kiểm tra mượn tài sản quá hạn</field>
+            <field name="model_id" ref="model_dnu_asset_lending"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_check_overdue()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Cron: Generate Scheduled Maintenance -->
+        <record id="cron_generate_scheduled_maintenance" model="ir.cron">
+            <field name="name">Tạo bảo trì định kỳ</field>
+            <field name="model_id" ref="model_dnu_maintenance_schedule"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_generate_scheduled_maintenance()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Cron: Compute Depreciation -->
+        <record id="cron_compute_depreciation" model="ir.cron">
+            <field name="name">Tính khấu hao tự động hàng tháng</field>
+            <field name="model_id" ref="model_dnu_asset_depreciation"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_compute_depreciation()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

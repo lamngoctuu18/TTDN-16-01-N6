@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Quick Booking Wizard Form -->
+        <record id="view_quick_booking_wizard_form" model="ir.ui.view">
+            <field name="name">dnu.quick.booking.wizard.form</field>
+            <field name="model">dnu.quick.booking.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Đặt phòng nhanh">
+                    <group>
+                        <group string="Thông tin cuộc họp">
+                            <field name="subject" placeholder="Ví dụ: Họp giao ban tuần"/>
+                            <field name="organizer_id"/>
+                        </group>
+                        <group string="Thời gian">
+                            <field name="date"/>
+                            <field name="start_time" widget="float_time"/>
+                            <field name="duration" widget="float_time"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Yêu cầu">
+                            <field name="num_attendees"/>
+                            <field name="attendee_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Tiện nghi cần thiết">
+                            <field name="need_projector"/>
+                            <field name="need_video_conference"/>
+                            <field name="need_whiteboard"/>
+                        </group>
+                    </group>
+                    
+                    <separator string="Thiết bị bổ sung"/>
+                    <field name="required_equipment_ids" widget="many2many_tags"/>
+                    
+                    <separator string="Phòng gợi ý"/>
+                    <field name="message" readonly="1" nolabel="1"/>
+                    
+                    <field name="start_datetime" invisible="1"/>
+                    <field name="end_datetime" invisible="1"/>
+                    
+                    <group>
+                        <field name="suggested_room_ids" widget="many2many_tags" readonly="1" nolabel="1" options="{'color_field': 'color'}"/>
+                    </group>
+                    
+                    <group>
+                        <field name="selected_room_id" domain="[('id', 'in', suggested_room_ids)]" options="{'no_create': True}"/>
+                    </group>
+                    
+                    <group string="Mô tả cuộc họp">
+                        <field name="description" nolabel="1" placeholder="Mô tả chi tiết về cuộc họp (tùy chọn)..."/>
+                    </group>
+                    
+                    <footer>
+                        <button name="action_book" string="Đặt phòng" type="object" class="btn-primary" attrs="{'invisible': [('selected_room_id', '=', False)]}"/>
+                        <button name="action_view_calendar" string="Xem lịch" type="object" class="btn-secondary"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action for Quick Booking Wizard -->
+        <record id="action_quick_booking_wizard" model="ir.actions.act_window">
+            <field name="name">Đặt phòng nhanh</field>
+            <field name="res_model">dnu.quick.booking.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- Asset Return Wizard Form -->
+        <record id="view_asset_return_wizard_form" model="ir.ui.view">
+            <field name="name">dnu.asset.return.wizard.form</field>
+            <field name="model">dnu.asset.return.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Trả tài sản">
+                    <group>
+                        <group>
+                            <field name="lending_id" readonly="1"/>
+                            <field name="asset_id"/>
+                            <field name="borrower_id"/>
+                        </group>
+                        <group>
+                            <field name="return_condition" required="1"/>
+                            <field name="create_maintenance"/>
+                        </group>
+                    </group>
+                    <group attrs="{'invisible': [('create_maintenance', '=', False)]}">
+                        <field name="maintenance_description" placeholder="Mô tả chi tiết về hư hỏng..." attrs="{'required': [('create_maintenance', '=', True)]}"/>
+                    </group>
+                    <group>
+                        <field name="return_notes" placeholder="Ghi chú khi trả..."/>
+                    </group>
+                    <footer>
+                        <button name="action_return" string="Xác nhận trả" type="object" class="btn-primary"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

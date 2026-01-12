@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ============ HR EMPLOYEE FORM EXTENSION ============ -->
+        <record id="view_employee_form_asset_integration" model="ir.ui.view">
+            <field name="name">hr.employee.form.asset.integration</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="hr.view_employee_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <!-- Nút xem tài sản -->
+                    <button name="action_view_assets" type="object" class="oe_stat_button" icon="fa-cubes">
+                        <field name="asset_count" widget="statinfo" string="Tài sản"/>
+                    </button>
+                    <!-- Nút xem lịch sử gán -->
+                    <button name="action_view_assignments" type="object" class="oe_stat_button" icon="fa-history">
+                        <field name="assignment_count" widget="statinfo" string="Lần gán"/>
+                    </button>
+                    <!-- Nút xem lịch sử mượn -->
+                    <button name="action_view_lendings" type="object" class="oe_stat_button" icon="fa-exchange">
+                        <field name="lending_count" widget="statinfo" string="Lần mượn"/>
+                    </button>
+                    <!-- Nút xem đặt phòng -->
+                    <button name="action_view_bookings" type="object" class="oe_stat_button" icon="fa-calendar">
+                        <field name="booking_count" widget="statinfo" string="Đặt phòng"/>
+                    </button>
+                    <!-- Nút xem bảo trì -->
+                    <button name="action_view_maintenance" type="object" class="oe_stat_button" icon="fa-wrench">
+                        <field name="maintenance_count" widget="statinfo" string="Bảo trì"/>
+                    </button>
+                </xpath>
+                
+                <!-- Thêm tab Tài sản & Phòng họp -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="Tài sản &amp; Phòng họp" name="assets_meetings">
+                        <group>
+                            <group string="Liên kết Nhân sự">
+                                <field name="nhan_vien_id" options="{'no_create': True}"/>
+                                <field name="ma_dinh_danh" readonly="1"/>
+                            </group>
+                        </group>
+                        
+                        <notebook>
+                            <page string="Tài sản đang sử dụng" name="current_assets">
+                                <field name="asset_ids" readonly="1">
+                                    <tree>
+                                        <field name="code"/>
+                                        <field name="name"/>
+                                        <field name="category_id"/>
+                                        <field name="serial_number"/>
+                                        <field name="state" widget="badge" 
+                                               decoration-success="state == 'available'"
+                                               decoration-info="state == 'assigned'"
+                                               decoration-warning="state == 'maintenance'"/>
+                                        <field name="assignment_date"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            
+                            <page string="Lịch sử gán tài sản" name="assignment_history">
+                                <field name="asset_assignment_ids" readonly="1">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="asset_id"/>
+                                        <field name="date_from"/>
+                                        <field name="date_to"/>
+                                        <field name="state" widget="badge"
+                                               decoration-success="state == 'active'"
+                                               decoration-muted="state == 'returned'"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            
+                            <page string="Lịch sử mượn tài sản" name="lending_history">
+                                <field name="asset_lending_ids" readonly="1">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="asset_id"/>
+                                        <field name="date_borrow"/>
+                                        <field name="date_expected_return"/>
+                                        <field name="state" widget="badge"
+                                               decoration-success="state == 'returned'"
+                                               decoration-info="state == 'borrowed'"
+                                               decoration-danger="state == 'overdue'"/>
+                                    </tree>
+                                </field>
+                            </page>
+                            
+                            <page string="Đặt phòng họp" name="booking_history">
+                                <field name="booking_ids" readonly="1">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="subject"/>
+                                        <field name="room_id"/>
+                                        <field name="start_datetime"/>
+                                        <field name="end_datetime"/>
+                                        <field name="state" widget="badge"
+                                               decoration-success="state == 'confirmed'"
+                                               decoration-info="state == 'in_progress'"
+                                               decoration-muted="state == 'completed'"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- ============ NHAN VIEN FORM EXTENSION ============ -->
+        <record id="view_nhan_vien_form_asset_integration" model="ir.ui.view">
+            <field name="name">nhan_vien.form.asset.integration</field>
+            <field name="model">nhan_vien</field>
+            <field name="inherit_id" ref="nhan_su.view_nhan_vien_form"/>
+            <field name="arch" type="xml">
+                <!-- Thêm button box trước sheet content -->
+                <xpath expr="//sheet/div[@class='oe_read_only']" position="before">
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_assets" type="object" class="oe_stat_button" icon="fa-cubes"
+                                attrs="{'invisible': [('hr_employee_id', '=', False)]}">
+                            <field name="asset_count" widget="statinfo" string="Tài sản"/>
+                        </button>
+                        <button name="action_view_bookings" type="object" class="oe_stat_button" icon="fa-calendar"
+                                attrs="{'invisible': [('hr_employee_id', '=', False)]}">
+                            <field name="booking_count" widget="statinfo" string="Đặt phòng"/>
+                        </button>
+                    </div>
+                </xpath>
+                
+                <!-- Thêm tab Tài sản & Phòng họp -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="Tài sản &amp; Phòng họp" name="assets_meetings">
+                        <group string="Liên kết HR">
+                            <field name="hr_employee_id" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Thống kê" attrs="{'invisible': [('hr_employee_id', '=', False)]}">
+                            <div class="alert alert-info" role="alert">
+                                <p>Để xem chi tiết tài sản và đặt phòng, vui lòng liên kết với nhân viên HR hoặc bấm vào các nút thống kê phía trên.</p>
+                            </div>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- ============ EMPLOYEE KANBAN EXTENSION ============ -->
+        <record id="hr_kanban_view_employees_asset" model="ir.ui.view">
+            <field name="name">hr.employee.kanban.asset</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="hr.hr_kanban_view_employees"/>
+            <field name="arch" type="xml">
+                <xpath expr="//templates//div[hasclass('oe_kanban_content')]" position="inside">
+                    <div class="mt-2">
+                        <span t-if="record.asset_count.raw_value > 0" class="badge bg-info me-1" title="Tài sản">
+                            <i class="fa fa-cubes"/> <t t-esc="record.asset_count.value"/>
+                        </span>
+                        <span t-if="record.booking_count.raw_value > 0" class="badge bg-success" title="Đặt phòng">
+                            <i class="fa fa-calendar"/> <t t-esc="record.booking_count.value"/>
+                        </span>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

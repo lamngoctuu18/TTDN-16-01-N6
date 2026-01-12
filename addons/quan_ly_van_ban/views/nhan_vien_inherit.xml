@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="nhan_vien_view_form_inherit_vb" model="ir.ui.view">
+            <field name="name">nhan_vien.form.inherit.vb</field>
+            <field name="model">nhan_vien</field>
+            <field name="inherit_id" ref="nhan_su.view_nhan_vien_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="inside">
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_van_ban_den" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
+                        </button>
+                    </div>
+                </xpath>
+                <xpath expr="//notebook" position="inside">
+                    <page string="Văn bản liên quan">
+                        <group>
+                            <field name="van_ban_den_ids" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="van_ban_ky_ids" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="van_ban_nhan_ids" readonly="1"/>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="action_van_ban_den_from_employee" model="ir.actions.act_window">
+            <field name="name">Văn bản đến</field>
+            <field name="res_model">van_ban_den</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('handler_employee_id', '=', active_id)]</field>
+            <field name="context">{'default_handler_employee_id': active_id}</field>
+        </record>
+    </data>
+</odoo>

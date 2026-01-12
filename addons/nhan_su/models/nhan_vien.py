@@ -34,6 +34,7 @@ class NhanVien(models.Model):
                                         store=True
                                         )
     
+    
     @api.depends("tuoi")
     def _compute_so_nguoi_bang_tuoi(self):
         for record in self:
