@@ -7,36 +7,94 @@
             <field name="name">dnu.asset.maintenance.kanban</field>
             <field name="model">dnu.asset.maintenance</field>
             <field name="arch" type="xml">
-                <kanban default_group_by="state" class="o_kanban_small_column">
+                <kanban default_group_by="state" class="o_kanban_small_column o_maintenance_modern_kanban">
                     <field name="name"/>
                     <field name="asset_id"/>
                     <field name="priority"/>
                     <field name="state"/>
                     <field name="assigned_tech_id"/>
+                    <field name="date_reported"/>
+                    <field name="date_scheduled"/>
+                    <field name="maintenance_type"/>
                     <field name="color"/>
                     <templates>
                         <t t-name="kanban-box">
-                            <div t-attf-class="#{kanban_color(record.color.raw_value)} oe_kanban_global_click">
-                                <div class="o_kanban_record_top">
-                                    <div class="o_kanban_record_headings">
-                                        <strong class="o_kanban_record_title">
-                                            <field name="name"/>
-                                        </strong>
-                                        <div class="o_kanban_record_subtitle">
-                                            <field name="asset_id"/>
+                            <div class="oe_kanban_global_click o_maintenance_card">
+                                <style>
+                                    .o_maintenance_modern_kanban .o_maintenance_card {
+                                        border-radius: 10px;
+                                        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+                                        transition: all 0.3s ease;
+                                        border-left: 4px solid;
+                                        padding: 12px;
+                                        margin-bottom: 8px;
+                                    }
+                                    .o_maintenance_modern_kanban .o_maintenance_card:hover {
+                                        transform: translateX(3px);
+                                        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+                                    }
+                                    .o_maintenance_card[data-state="planned"] { border-left-color: #3498DB; }
+                                    .o_maintenance_card[data-state="in_progress"] { border-left-color: #E67E22; }
+                                    .o_maintenance_card[data-state="done"] { border-left-color: #27AE60; }
+                                    .o_maintenance_card[data-state="cancelled"] { border-left-color: #95A5A6; }
+                                    
+                                    .o_priority_stars {
+                                        color: #F39C12;
+                                        font-size: 13px;
+                                    }
+                                    .o_maintenance_type_badge {
+                                        display: inline-block;
+                                        padding: 3px 8px;
+                                        border-radius: 10px;
+                                        font-size: 10px;
+                                        font-weight: 600;
+                                        background: #ECF0F1;
+                                        color: #2C3E50;
+                                        text-transform: uppercase;
+                                    }
+                                    .o_maintenance_info {
+                                        margin: 6px 0;
+                                        font-size: 12px;
+                                        color: #34495E;
+                                    }
+                                </style>
+                                
+                                <div t-att-data-state="record.state.raw_value">
+                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                        <div style="flex: 1;">
+                                            <strong style="font-size: 14px; color: #2C3E50;">
+                                                <t t-esc="record.name.value"/>
+                                            </strong>
+                                        </div>
+                                        <div class="o_priority_stars">
+                                            <field name="priority" widget="priority"/>
                                         </div>
                                     </div>
-                                    <field name="priority" widget="priority"/>
-                                </div>
-                                <div class="o_kanban_record_body">
-                                    <field name="description"/>
-                                </div>
-                                <div class="o_kanban_record_bottom">
-                                    <div class="oe_kanban_bottom_left">
-                                        <field name="date_reported" widget="date"/>
+                                    
+                                    <div style="margin: 10px 0;">
+                                        <span class="o_maintenance_type_badge">
+                                            <i class="fa fa-wrench"/> <t t-esc="record.maintenance_type.value"/>
+                                        </span>
                                     </div>
-                                    <div class="oe_kanban_bottom_right">
-                                        <field name="assigned_tech_id"/>
+                                    
+                                    <div class="o_maintenance_info">
+                                        <div style="margin-bottom: 6px;">
+                                            <i class="fa fa-cube" style="color: #E67E22; width: 16px;" title="Tài sản"/>
+                                            <strong><t t-esc="record.asset_id.value"/></strong>
+                                        </div>
+                                        <div t-if="record.assigned_tech_id.value" style="margin-bottom: 6px;">
+                                            <i class="fa fa-user" style="color: #2980B9; width: 16px;"/>
+                                            <t t-esc="record.assigned_tech_id.value"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="border-top: 1px solid #ECF0F1; margin-top: 10px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 11px; color: #7F8C8D;">
+                                        <div t-if="record.date_reported.value">
+                                            <i class="fa fa-calendar"/> <t t-esc="record.date_reported.value"/>
+                                        </div>
+                                        <div t-if="record.date_scheduled.value" style="color: #E67E22;">
+                                            <i class="fa fa-clock-o"/> <t t-esc="record.date_scheduled.value"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -55,13 +113,13 @@
                     <field name="name"/>
                     <field name="asset_id"/>
                     <field name="maintenance_type"/>
+                    <field name="lending_id" optional="hide"/>
+                    <field name="handover_id" optional="hide"/>
                     <field name="reporter_name" string="Người báo cáo"/>
                     <field name="nhan_vien_bao_cao_id" optional="hide"/>
-                    <field name="reporter_id" optional="hide"/>
                     <field name="date_reported"/>
                     <field name="tech_name" string="Kỹ thuật viên"/>
                     <field name="nhan_vien_ky_thuat_id" optional="hide"/>
-                    <field name="assigned_tech_id" optional="hide"/>
                     <field name="priority" widget="priority"/>
                     <field name="state" widget="badge" decoration-info="state=='pending'" decoration-warning="state=='in_progress'" decoration-success="state=='done'"/>
                 </tree>
@@ -84,6 +142,9 @@
                     <sheet>
                         <div class="oe_button_box" name="button_box">
                             <field name="priority" widget="priority"/>
+                            <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
+                                <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
+                            </button>
                         </div>
                         <div class="oe_title">
                             <h1>
@@ -95,18 +156,20 @@
                                 <field name="asset_id" options="{'no_create': True}"/>
                                 <field name="maintenance_type"/>
                                 <field name="date_reported"/>
+                                <field name="lending_id" readonly="1" attrs="{'invisible': [('lending_id', '=', False)]}"/>
+                                <field name="handover_id" readonly="1" attrs="{'invisible': [('handover_id', '=', False)]}"/>
                             </group>
                             <group string="Người báo cáo">
-                                <field name="nhan_vien_bao_cao_id" options="{'no_quick_create': True}" placeholder="Chọn từ hệ thống Nhân sự"/>
-                                <label for="reporter_id" string="-- Hoặc --"/>
-                                <field name="reporter_id" placeholder="Chọn từ HR"/>
+                                <field name="nhan_vien_bao_cao_id" string="Người báo cáo" options="{'no_quick_create': True}" placeholder="Chọn nhân viên"/>
                             </group>
                         </group>
                         <group>
                             <group string="Kỹ thuật viên xử lý">
-                                <field name="nhan_vien_ky_thuat_id" options="{'no_quick_create': True}" placeholder="Chọn từ hệ thống Nhân sự"/>
-                                <label for="assigned_tech_id" string="-- Hoặc --"/>
-                                <field name="assigned_tech_id" placeholder="Chọn từ HR"/>
+                                <field name="nhan_vien_ky_thuat_id" 
+                                       string="Kỹ thuật viên" 
+                                       options="{'no_quick_create': True}" 
+                                       placeholder="Chọn kỹ thuật viên"
+                                       domain="[('don_vi_chinh_id.ten_don_vi', '=', 'Bảo Trì')]"/>
                             </group>
                             <group string="Lịch trình">
                                 <field name="date_scheduled"/>

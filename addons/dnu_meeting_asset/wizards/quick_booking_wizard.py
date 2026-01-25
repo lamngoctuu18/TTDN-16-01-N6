@@ -58,22 +58,29 @@ class QuickBookingWizard(models.TransientModel):
         required=True,
         default=lambda self: self.env.user.employee_id
     )
-    attendee_ids = fields.Many2many(
-        'hr.employee',
-        string='Người tham dự'
+    
+    # Loại cuộc họp
+    meeting_type = fields.Selection([
+        ('offline', 'Họp trực tiếp tại phòng'),
+        ('online', 'Họp trực tuyến (Online)'),
+    ], string='Loại cuộc họp', default='offline', required=True)
+    
+    # Tích hợp cho họp online
+    create_zoom_meeting = fields.Boolean(
+        string='Tạo Zoom Meeting',
+        default=True,
+        help='Tự động tạo Zoom meeting khi xác nhận'
+    )
+    sync_google_calendar = fields.Boolean(
+        string='Đồng bộ Google Calendar',
+        default=True,
+        help='Tự động đồng bộ với Google Calendar'
     )
     
     # Tiện nghi yêu cầu
     need_projector = fields.Boolean(string='Cần máy chiếu')
     need_video_conference = fields.Boolean(string='Cần hệ thống họp trực tuyến')
     need_whiteboard = fields.Boolean(string='Cần bảng trắng')
-    
-    # Thiết bị bổ sung
-    required_equipment_ids = fields.Many2many(
-        'dnu.asset',
-        string='Thiết bị bổ sung',
-        domain=[('state', '=', 'available')]
-    )
     
     # Kết quả gợi ý
     suggested_room_ids = fields.Many2many(
@@ -189,21 +196,38 @@ class QuickBookingWizard(models.TransientModel):
             raise UserError(_('Phòng "%s" đã bị đặt trong khoảng thời gian này!') % self.selected_room_id.name)
         
         # Tạo booking
-        booking = self.env['dnu.meeting.booking'].create({
+        booking_vals = {
             'subject': self.subject,
             'description': self.description,
             'room_id': self.selected_room_id.id,
             'organizer_id': self.organizer_id.id,
             'start_datetime': self.start_datetime,
             'end_datetime': self.end_datetime,
-            'attendee_ids': [(6, 0, self.attendee_ids.ids)],
-            'required_equipment_ids': [(6, 0, self.required_equipment_ids.ids)],
-            'external_attendees': max(0, self.num_attendees - len(self.attendee_ids) - 1),
+            'num_attendees': self.num_attendees,  # Tổng số người tham dự
+            'meeting_type': self.meeting_type,
             'state': 'draft',
-        })
+        }
+        
+        booking = self.env['dnu.meeting.booking'].create(booking_vals)
         
         # Tự động submit
         booking.action_submit()
+        
+        # Nếu là họp online và đã xác nhận, tạo Zoom meeting và đồng bộ Google Calendar
+        if self.meeting_type == 'online' and booking.state == 'confirmed':
+            if self.create_zoom_meeting:
+                try:
+                    booking.action_create_zoom_meeting()
+                except Exception as e:
+                    # Log lỗi nhưng không block
+                    pass
+            
+            if self.sync_google_calendar:
+                try:
+                    booking.action_sync_google_calendar()
+                except Exception as e:
+                    # Log lỗi nhưng không block
+                    pass
         
         return {
             'type': 'ir.actions.act_window',

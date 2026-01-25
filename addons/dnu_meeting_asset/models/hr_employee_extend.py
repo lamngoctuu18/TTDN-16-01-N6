@@ -27,6 +27,20 @@ class HrEmployeeExtend(models.Model):
         readonly=True
     )
     
+    # Lấy đơn vị và chức vụ chính từ lịch sử công tác
+    don_vi_chinh_id = fields.Many2one(
+        'don_vi',
+        compute='_compute_don_vi_chuc_vu_chinh',
+        string='Đơn vị chính',
+        store=True
+    )
+    chuc_vu_chinh_id = fields.Many2one(
+        'chuc_vu',
+        compute='_compute_don_vi_chuc_vu_chinh',
+        string='Chức vụ chính',
+        store=True
+    )
+    
     # Tài sản đang được gán
     asset_ids = fields.One2many(
         'dnu.asset',
@@ -89,6 +103,28 @@ class HrEmployeeExtend(models.Model):
         string='Số phiếu bảo trì'
     )
 
+    @api.depends('nhan_vien_id.lich_su_cong_tac_ids', 'nhan_vien_id.lich_su_cong_tac_ids.loai_chuc_vu')
+    def _compute_don_vi_chuc_vu_chinh(self):
+        """Lấy đơn vị và chức vụ chính từ lịch sử công tác"""
+        for employee in self:
+            if not employee.nhan_vien_id:
+                employee.don_vi_chinh_id = False
+                employee.chuc_vu_chinh_id = False
+                continue
+            
+            # Tìm lịch sử công tác chính (loại chức vụ = 'Chính')
+            lstc_chinh = employee.nhan_vien_id.lich_su_cong_tac_ids.filtered(
+                lambda x: x.loai_chuc_vu == 'Chính'
+            )
+            
+            if lstc_chinh:
+                # Lấy bản ghi đầu tiên
+                employee.don_vi_chinh_id = lstc_chinh[0].don_vi_id
+                employee.chuc_vu_chinh_id = lstc_chinh[0].chuc_vu_id
+            else:
+                employee.don_vi_chinh_id = False
+                employee.chuc_vu_chinh_id = False
+    
     @api.depends('asset_ids')
     def _compute_asset_count(self):
         for employee in self:
@@ -238,12 +274,56 @@ class NhanVienExtend(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        if set(vals).intersection({'ho_va_ten', 'ho_ten_dem', 'ten', 'email', 'so_dien_thoai', 'que_quan'}):
+        if set(vals).intersection({'ho_va_ten', 'ho_ten_dem', 'ten', 'email', 'so_dien_thoai', 'que_quan', 'lich_su_cong_tac_ids'}):
             self._sync_hr_employee_fields()
         if 'hr_employee_id' not in vals:
             # Nếu chưa liên kết, đảm bảo tạo
             self._ensure_hr_employee()
         return res
+    
+    def _get_or_create_hr_department(self, don_vi):
+        """Tìm hoặc tạo hr.department từ don_vi"""
+        if not don_vi:
+            return False
+        
+        HrDepartment = self.env['hr.department']
+        # Tìm department đã tồn tại (theo tên)
+        dept = HrDepartment.search([('name', '=', don_vi.ten_don_vi)], limit=1)
+        
+        if not dept:
+            # Tạo mới nếu chưa có
+            dept = HrDepartment.create({
+                'name': don_vi.ten_don_vi,
+                'company_id': self.env.company.id,
+            })
+        
+        return dept
+    
+    def _get_or_create_hr_job(self, chuc_vu, department_id=None):
+        """Tìm hoặc tạo hr.job từ chuc_vu"""
+        if not chuc_vu:
+            return False
+        
+        HrJob = self.env['hr.job']
+        # Tìm job đã tồn tại (theo tên và department)
+        domain = [('name', '=', chuc_vu.ten_chuc_vu)]
+        if department_id:
+            domain.append(('department_id', '=', department_id))
+        
+        job = HrJob.search(domain, limit=1)
+        
+        if not job:
+            # Tạo mới nếu chưa có
+            job_vals = {
+                'name': chuc_vu.ten_chuc_vu,
+                'company_id': self.env.company.id,
+            }
+            if department_id:
+                job_vals['department_id'] = department_id
+            
+            job = HrJob.create(job_vals)
+        
+        return job
 
     def _ensure_hr_employee(self):
         """Đảm bảo mỗi nhan_vien có một bản ghi hr.employee liên kết"""
@@ -252,6 +332,12 @@ class NhanVienExtend(models.Model):
             if nv.hr_employee_id:
                 continue
             name = nv.ho_va_ten or nv.ten or nv.ma_dinh_danh
+            
+            # Lấy đơn vị và chức vụ chính
+            lstc_chinh = nv.lich_su_cong_tac_ids.filtered(
+                lambda x: x.loai_chuc_vu == 'Chính'
+            )
+            
             hr_vals = {
                 'name': name,
                 'nhan_vien_id': nv.id,
@@ -259,6 +345,22 @@ class NhanVienExtend(models.Model):
                 'work_phone': nv.so_dien_thoai,
                 'company_id': self.env.company.id,
             }
+            
+            # Ánh xạ department và job
+            if lstc_chinh:
+                don_vi = lstc_chinh[0].don_vi_id
+                chuc_vu = lstc_chinh[0].chuc_vu_id
+                
+                if don_vi:
+                    hr_dept = self._get_or_create_hr_department(don_vi)
+                    if hr_dept:
+                        hr_vals['department_id'] = hr_dept.id
+                
+                if chuc_vu:
+                    hr_job = self._get_or_create_hr_job(chuc_vu, hr_vals.get('department_id'))
+                    if hr_job:
+                        hr_vals['job_id'] = hr_job.id
+            
             hr_emp = HrEmployee.create(hr_vals)
             nv.hr_employee_id = hr_emp
 
@@ -273,6 +375,26 @@ class NhanVienExtend(models.Model):
                 'work_email': nv.email,
                 'work_phone': nv.so_dien_thoai,
             }
+            
+            # Đồng bộ department và job từ lịch sử công tác chính
+            lstc_chinh = nv.lich_su_cong_tac_ids.filtered(
+                lambda x: x.loai_chuc_vu == 'Chính'
+            )
+            
+            if lstc_chinh:
+                don_vi = lstc_chinh[0].don_vi_id
+                chuc_vu = lstc_chinh[0].chuc_vu_id
+                
+                if don_vi:
+                    hr_dept = self._get_or_create_hr_department(don_vi)
+                    if hr_dept:
+                        update_vals['department_id'] = hr_dept.id
+                
+                if chuc_vu:
+                    hr_job = self._get_or_create_hr_job(chuc_vu, update_vals.get('department_id'))
+                    if hr_job:
+                        update_vals['job_id'] = hr_job.id
+            
             # Tránh ghi None nếu không có dữ liệu mới
             cleaned_vals = {k: v for k, v in update_vals.items() if v}
             if cleaned_vals:
@@ -291,3 +413,25 @@ class NhanVienExtend(models.Model):
         if self.hr_employee_id:
             return self.hr_employee_id.action_view_bookings()
         return {'type': 'ir.actions.act_window_close'}
+    
+    def action_sync_all_to_hr_employee(self):
+        """Đồng bộ tất cả nhân viên sang hr.employee (dùng cho admin)"""
+        all_nhan_vien = self.env['nhan_vien'].search([])
+        synced_count = 0
+        
+        for nv in all_nhan_vien:
+            nv._ensure_hr_employee()
+            if nv.hr_employee_id:
+                nv._sync_hr_employee_fields()
+                synced_count += 1
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Đồng bộ hoàn tất'),
+                'message': _('Đã đồng bộ %d nhân viên sang HR Employee') % synced_count,
+                'type': 'success',
+                'sticky': False,
+            }
+        }

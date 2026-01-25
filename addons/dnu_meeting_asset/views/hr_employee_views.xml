@@ -115,7 +115,7 @@
             <field name="inherit_id" ref="nhan_su.view_nhan_vien_form"/>
             <field name="arch" type="xml">
                 <!-- Thêm button box trước sheet content -->
-                <xpath expr="//sheet/div[@class='oe_read_only']" position="before">
+                <xpath expr="//sheet/div[hasclass('oe_read_only')]" position="before">
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_assets" type="object" class="oe_stat_button" icon="fa-cubes"
                                 attrs="{'invisible': [('hr_employee_id', '=', False)]}">
@@ -144,18 +144,38 @@
             </field>
         </record>
 
+        <!-- ============ ACTION: SYNC ALL TO HR EMPLOYEE ============ -->
+        <record id="action_sync_all_nhan_vien_to_hr" model="ir.actions.server">
+            <field name="name">Đồng bộ tất cả sang HR Employee</field>
+            <field name="model_id" ref="nhan_su.model_nhan_vien"/>
+            <field name="binding_model_id" ref="nhan_su.model_nhan_vien"/>
+            <field name="binding_view_types">list</field>
+            <field name="state">code</field>
+            <field name="code">
+action = records.action_sync_all_to_hr_employee()
+            </field>
+        </record>
+
         <!-- ============ EMPLOYEE KANBAN EXTENSION ============ -->
         <record id="hr_kanban_view_employees_asset" model="ir.ui.view">
             <field name="name">hr.employee.kanban.asset</field>
             <field name="model">hr.employee</field>
             <field name="inherit_id" ref="hr.hr_kanban_view_employees"/>
             <field name="arch" type="xml">
+                <!-- Add fields to kanban -->
+                <xpath expr="//kanban" position="attributes">
+                    <attribute name="sample">1</attribute>
+                </xpath>
+                <xpath expr="//field[@name='user_id']" position="after">
+                    <field name="asset_count"/>
+                    <field name="booking_count"/>
+                </xpath>
                 <xpath expr="//templates//div[hasclass('oe_kanban_content')]" position="inside">
                     <div class="mt-2">
-                        <span t-if="record.asset_count.raw_value > 0" class="badge bg-info me-1" title="Tài sản">
+                        <span t-if="record.asset_count and record.asset_count.raw_value > 0" class="badge bg-info me-1" title="Tài sản">
                             <i class="fa fa-cubes"/> <t t-esc="record.asset_count.value"/>
                         </span>
-                        <span t-if="record.booking_count.raw_value > 0" class="badge bg-success" title="Đặt phòng">
+                        <span t-if="record.booking_count and record.booking_count.raw_value > 0" class="badge bg-success" title="Đặt phòng">
                             <i class="fa fa-calendar"/> <t t-esc="record.booking_count.value"/>
                         </span>
                     </div>

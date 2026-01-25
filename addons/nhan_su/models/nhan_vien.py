@@ -29,24 +29,56 @@ class NhanVien(models.Model):
         "danh_sach_chung_chi_bang_cap", 
         inverse_name="nhan_vien_id", 
         string = "Danh sách chứng chỉ bằng cấp")
-    so_nguoi_bang_tuoi = fields.Integer("Số người bằng tuổi", 
-                                        compute="so_nguoi_bang_tuoi",
+    so_nguoi_bang_tuoi = fields.Integer("Số người bằng tuổi",
+                                        compute="_compute_so_nguoi_bang_tuoi",
                                         store=True
                                         )
     
+    # Chức vụ và đơn vị hiện tại (từ lịch sử công tác loại "Chính")
+    don_vi_chinh_id = fields.Many2one(
+        'don_vi',
+        string='Phòng ban',
+        compute='_compute_chuc_vu_don_vi_chinh',
+        store=True,
+        help='Đơn vị/Phòng ban chính hiện tại'
+    )
+    chuc_vu_chinh_id = fields.Many2one(
+        'chuc_vu',
+        string='Chức vụ',
+        compute='_compute_chuc_vu_don_vi_chinh',
+        store=True,
+        help='Chức vụ chính hiện tại'
+    )
+    
+    @api.depends('lich_su_cong_tac_ids', 'lich_su_cong_tac_ids.loai_chuc_vu', 
+                 'lich_su_cong_tac_ids.chuc_vu_id', 'lich_su_cong_tac_ids.don_vi_id')
+    def _compute_chuc_vu_don_vi_chinh(self):
+        """Tự động lấy chức vụ và đơn vị chính từ lịch sử công tác"""
+        for record in self:
+            # Tìm bản ghi lịch sử công tác có loại chức vụ = "Chính"
+            lich_su_chinh = record.lich_su_cong_tac_ids.filtered(
+                lambda x: x.loai_chuc_vu == 'Chính'
+            )
+            if lich_su_chinh:
+                # Lấy bản ghi đầu tiên (có thể sắp xếp theo ngày nếu có)
+                record.don_vi_chinh_id = lich_su_chinh[0].don_vi_id
+                record.chuc_vu_chinh_id = lich_su_chinh[0].chuc_vu_id
+            else:
+                record.don_vi_chinh_id = False
+                record.chuc_vu_chinh_id = False
     
     @api.depends("tuoi")
     def _compute_so_nguoi_bang_tuoi(self):
         for record in self:
             if record.tuoi:
-                records = self.env['nhan_vien'].search(
-                    [
-                        ('tuoi', '=', record.tuoi),
-                        ('ma_dinh_danh', '!=', record.ma_dinh_danh)
-                    ]
-                )
+                records = self.env['nhan_vien'].search([
+                    ('tuoi', '=', record.tuoi),
+                    ('ma_dinh_danh', '!=', record.ma_dinh_danh)
+                ])
                 record.so_nguoi_bang_tuoi = len(records)
-    _sql_constrains = [
+            else:
+                record.so_nguoi_bang_tuoi = 0
+    _sql_constraints = [
         ('ma_dinh_danh_unique', 'unique(ma_dinh_danh)', 'Mã định danh phải là duy nhất')
     ]
 

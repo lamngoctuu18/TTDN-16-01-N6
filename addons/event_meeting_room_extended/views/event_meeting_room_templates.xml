@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Meeting Room Page Template -->
+    <template id="event_meeting_room_page" name="Event Meeting Room">
+        <t t-call="website.layout">
+            <t t-set="additional_title" t-value="room.name"/>
+            <div id="wrap" class="o_wevent_meeting_room">
+                <!-- Header -->
+                <section class="bg-light py-3">
+                    <div class="container">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="/event">Sự Kiện</a></li>
+                            <li class="breadcrumb-item"><a t-att-href="'/event/%s' % event.id" t-esc="event.name"/></li>
+                            <li class="breadcrumb-item"><a t-att-href="'/event/%s/community' % event.id">Cộng Đồng</a></li>
+                            <li class="breadcrumb-item active" t-esc="room.name"/>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- Main Content -->
+                <section class="py-4">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <!-- Main Room Area -->
+                            <div class="col-lg-9">
+                                <!-- Room Info Card -->
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h2 class="mb-1">
+                                                    <t t-esc="room.name"/>
+                                                    <span t-if="room.is_pinned" class="badge badge-info ml-2">
+                                                        <i class="fa fa-thumb-tack"/> Đã Ghim
+                                                    </span>
+                                                </h2>
+                                                <p class="text-muted mb-2">
+                                                    <i class="fa fa-user"/> Tạo bởi <t t-esc="room.creator_name"/>
+                                                    <t t-if="room.language_id">
+                                                        | <i class="fa fa-language"/> <t t-esc="room.language_id.name"/>
+                                                    </t>
+                                                </p>
+                                                <p t-if="room.summary" t-esc="room.summary"/>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="mb-2">
+                                                    <i class="fa fa-users"/> 
+                                                    <span id="room_participants" t-esc="room.current_participants"/>/<t t-esc="room.max_capacity"/>
+                                                </div>
+                                                <div class="progress" style="width: 150px; height: 10px;">
+                                                    <div id="room_capacity_bar" 
+                                                         class="progress-bar" 
+                                                         t-att-style="'width: %s%%' % (room.current_participants * 100 / room.max_capacity if room.max_capacity else 0)"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Warnings/Alerts -->
+                                <div t-if="room.is_closed" class="alert alert-danger">
+                                    <i class="fa fa-times-circle"/> Phòng này hiện đang đóng.
+                                </div>
+                                
+                                <div t-if="room.is_full" class="alert alert-warning">
+                                    <i class="fa fa-users"/> Phòng này đã đầy. Vui lòng thử lại sau.
+                                </div>
+                                
+                                <div t-if="not event_started" class="alert alert-info">
+                                    <i class="fa fa-clock-o"/> Sự kiện chưa bắt đầu. Phòng sẽ khả dụng khi sự kiện bắt đầu.
+                                </div>
+                                
+                                <div t-if="event_ended" class="alert alert-info">
+                                    <i class="fa fa-calendar-times-o"/> Sự kiện này đã kết thúc. Phòng không còn hoạt động.
+                                </div>
+
+                                <!-- Registration Required -->
+                                <div t-if="is_public_user or not is_registered" class="alert alert-warning">
+                                    <i class="fa fa-ticket"/> 
+                                    <t t-if="is_public_user">
+                                        Vui lòng <a href="/web/login">đăng nhập</a> và đăng ký sự kiện để tham gia phòng này.
+                                    </t>
+                                    <t t-else="">
+                                        Bạn cần <a t-att-href="'/event/%s/register' % event.id">đăng ký sự kiện</a> trước khi tham gia phòng này.
+                                    </t>
+                                </div>
+
+                                <!-- Jitsi Meeting Embed -->
+                                <div t-if="can_join and (is_registered or not is_public_user)" class="card">
+                                    <div class="card-body p-0">
+                                        <div id="jitsi_meet" 
+                                             style="height: 600px;"
+                                             t-att-data-room-id="room.id"
+                                             t-att-data-room-name="room.jitsi_room_name"
+                                             t-att-data-user-name="request.env.user.name if not is_public_user else 'Guest'"/>
+                                    </div>
+                                </div>
+
+                                <!-- Room Description -->
+                                <div t-if="room.description" class="card mt-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Về Phòng Này</h5>
+                                    </div>
+                                    <div class="card-body" t-field="room.description"/>
+                                </div>
+                            </div>
+
+                            <!-- Sidebar -->
+                            <div class="col-lg-3">
+                                <!-- Other Rooms -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Phòng Khác</h6>
+                                    </div>
+                                    <div class="list-group list-group-flush">
+                                        <t t-if="not other_rooms">
+                                            <div class="list-group-item text-muted small">
+                                                Không có phòng khác
+                                            </div>
+                                        </t>
+                                        <t t-foreach="other_rooms" t-as="other">
+                                            <a t-att-href="'/event/%s/room/%s' % (event.id, other.room_token)" 
+                                               class="list-group-item list-group-item-action">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1" t-esc="other.name"/>
+                                                    <small>
+                                                        <t t-esc="other.current_participants"/>/<t t-esc="other.max_capacity"/>
+                                                    </small>
+                                                </div>
+                                                <small class="text-muted" t-if="other.language_id">
+                                                    <i class="fa fa-language"/> <t t-esc="other.language_id.name"/>
+                                                </small>
+                                            </a>
+                                        </t>
+                                    </div>
+                                    <div class="card-footer">
+                                        <a t-att-href="'/event/%s/community' % event.id" class="btn btn-sm btn-block btn-outline-primary">
+                                            <i class="fa fa-th"/> Xem Tất Cả Phòng
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- Room Info -->
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Thông Tin Phòng</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <dl class="mb-0">
+                                            <dt>Đối Tượng Mục Tiêu</dt>
+                                            <dd t-esc="dict(room._fields['target_audience'].selection)[room.target_audience]"/>
+                                            
+                                            <dt>Tổng Lượt Truy Cập</dt>
+                                            <dd><t t-esc="room.total_visits"/> lượt</dd>
+                                            
+                                            <dt>Hoạt Động Gần Nhất</dt>
+                                            <dd t-field="room.last_activity_date" t-options='{"widget": "relative"}'/>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+</odoo>

@@ -38,6 +38,40 @@ class AssetDashboard(models.Model):
     
     company_id = fields.Many2one('res.company', string='Công ty')
 
+    def init(self):
+        """Tạo SQL view cho dashboard"""
+        self.env.cr.execute("""
+            CREATE OR REPLACE VIEW dnu_asset_dashboard AS (
+                SELECT
+                    1 as id,
+                    COUNT(a.id) as total_assets,
+                    COALESCE(SUM(a.purchase_value), 0) as total_value,
+                    COUNT(CASE WHEN a.state = 'available' THEN 1 END) as available_assets,
+                    COUNT(CASE WHEN a.state = 'assigned' THEN 1 END) as assigned_assets,
+                    COUNT(CASE WHEN a.state = 'maintenance' THEN 1 END) as maintenance_assets,
+                    COUNT(CASE WHEN a.state = 'disposed' THEN 1 END) as disposed_assets,
+                    
+                    COALESCE(SUM(d.total_depreciated), 0) as total_depreciation,
+                    COALESCE(SUM(d.current_value), 0) as current_total_value,
+                    
+                    (SELECT COUNT(*) FROM dnu_asset_lending WHERE state = 'requested') as pending_lendings,
+                    (SELECT COUNT(*) FROM dnu_asset_lending WHERE state = 'borrowed') as active_lendings,
+                    (SELECT COUNT(*) FROM dnu_asset_lending WHERE state = 'overdue') as overdue_lendings,
+                    
+                    (SELECT COUNT(*) FROM dnu_asset_maintenance WHERE state = 'scheduled') as scheduled_maintenance,
+                    (SELECT COUNT(*) FROM dnu_asset_maintenance WHERE state = 'pending') as pending_maintenance,
+                    
+                    (SELECT COUNT(*) FROM dnu_asset_inventory WHERE state IN ('in_progress', 'review')) as pending_inventories,
+                    
+                    (SELECT COUNT(*) FROM dnu_asset_disposal WHERE state = 'submitted') as pending_disposals,
+                    
+                    1 as company_id
+                FROM dnu_asset a
+                LEFT JOIN dnu_asset_depreciation d ON d.asset_id = a.id AND d.state = 'running'
+                LIMIT 1
+            )
+        """)
+
     @api.model
     def get_dashboard_data(self):
         """Lấy dữ liệu dashboard"""

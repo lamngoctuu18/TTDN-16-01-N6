@@ -12,9 +12,7 @@
                     <field name="asset_id"/>
                     <field name="employee_name" string="Người được gán"/>
                     <field name="nhan_vien_id" optional="hide"/>
-                    <field name="employee_id" optional="hide"/>
-                    <field name="department_id" optional="show"/>
-                    <field name="don_vi_id" optional="hide" string="Đơn vị"/>
+                    <field name="don_vi_id" string="Phòng ban"/>
                     <field name="date_from"/>
                     <field name="date_to"/>
                     <field name="state" widget="badge" decoration-success="state=='active'" decoration-muted="state=='returned'"/>
@@ -31,10 +29,28 @@
                     <header>
                         <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'draft')]}"/>
                         <button name="action_return" string="Trả lại" type="object" class="btn-warning" attrs="{'invisible': [('state', '!=', 'active')]}"/>
+                        <button name="action_create_handover" string="Tạo biên bản" type="object" class="btn-info" 
+                                attrs="{'invisible': ['|', ('state', 'not in', ['draft','active']), ('handover_id', '!=', False)]}" 
+                                groups="dnu_meeting_asset.group_asset_manager"/>
                         <button name="action_cancel" string="Hủy" type="object" attrs="{'invisible': [('state', 'in', ['returned', 'cancelled'])]}"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,active,returned"/>
                     </header>
                     <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" type="object" name="action_open_handover" icon="fa-file-text-o"
+                                    attrs="{'invisible': [('handover_id', '=', False)]}">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Biên bản</span>
+                                    <span class="o_stat_text">Bàn giao</span>
+                                </div>
+                            </button>
+
+                            <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
+                                <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
+                            </button>
+                        </div>
+                        
+                        <field name="handover_id" invisible="1"/>
                         <div class="oe_title">
                             <h1>
                                 <field name="name" readonly="1"/>
@@ -44,14 +60,10 @@
                             <group string="Thông tin tài sản">
                                 <field name="asset_id" options="{'no_create': True}"/>
                                 <field name="date_from"/>
-                                <field name="date_to"/>
                             </group>
                             <group string="Thông tin nhân viên">
-                                <field name="nhan_vien_id" options="{'no_quick_create': True}" placeholder="Chọn từ hệ thống Nhân sự"/>
+                                <field name="nhan_vien_id" string="Nhân viên" options="{'no_quick_create': True}" placeholder="Chọn nhân viên"/>
                                 <field name="don_vi_id" attrs="{'invisible': [('nhan_vien_id', '=', False)]}" string="Đơn vị"/>
-                                <label for="employee_id" string="-- Hoặc --"/>
-                                <field name="employee_id" options="{'no_quick_create': True}" placeholder="Chọn từ HR"/>
-                                <field name="department_id" attrs="{'invisible': [('employee_id', '=', False)]}"/>
                             </group>
                         </group>
                         <group string="Thông tin trả lại" attrs="{'invisible': [('state', '!=', 'returned')]}">

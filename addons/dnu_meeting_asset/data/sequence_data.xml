@@ -122,5 +122,35 @@
             <field name="number_increment">1</field>
         </record>
 
+        <!-- Sequence for Asset Handover - Assignment -->
+        <record id="sequence_dnu_asset_handover_assignment" model="ir.sequence">
+            <field name="name">Asset Handover Assignment Sequence</field>
+            <field name="code">dnu.asset.handover.assignment</field>
+            <field name="prefix">BBGÁN</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Handover - Lending -->
+        <record id="sequence_dnu_asset_handover_lending" model="ir.sequence">
+            <field name="name">Asset Handover Lending Sequence</field>
+            <field name="code">dnu.asset.handover.lending</field>
+            <field name="prefix">BBMƯỢN</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
+        <!-- Sequence for Asset Handover - Return -->
+        <record id="sequence_dnu_asset_handover_return" model="ir.sequence">
+            <field name="name">Asset Handover Return Sequence</field>
+            <field name="code">dnu.asset.handover.return</field>
+            <field name="prefix">BBTRẢ</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+
     </data>
 </odoo>

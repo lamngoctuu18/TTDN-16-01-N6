@@ -2,7 +2,7 @@
 
 from odoo import http
 from odoo.http import request
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 
 
@@ -649,3 +649,86 @@ class MeetingAssetAPI(http.Controller):
                 'success': False,
                 'error': str(e)
             }
+
+
+class GoogleCalendarOAuth(http.Controller):
+    """OAuth callback handler for Google Calendar integration"""
+    
+    @http.route('/google_calendar/callback', type='http', auth='public', methods=['GET'], csrf=False)
+    def google_calendar_callback(self, **kwargs):
+        """
+        Xử lý callback từ Google OAuth2
+        Nhận authorization code và đổi lấy access_token + refresh_token
+        """
+        code = kwargs.get('code')
+        error = kwargs.get('error')
+        
+        if error:
+            return request.render('dnu_meeting_asset.google_auth_error', {
+                'error': error,
+                'error_description': kwargs.get('error_description', 'Unknown error')
+            })
+        
+        if not code:
+            return request.render('dnu_meeting_asset.google_auth_error', {
+                'error': 'missing_code',
+                'error_description': 'Authorization code not found'
+            })
+        
+        try:
+            # Lấy config Google Calendar
+            GoogleCal = request.env['google.calendar.integration'].sudo()
+            config = GoogleCal.search([('is_active', '=', True)], limit=1)
+            
+            if not config:
+                return request.render('dnu_meeting_asset.google_auth_error', {
+                    'error': 'no_config',
+                    'error_description': 'Google Calendar integration not configured'
+                })
+            
+            # Đổi authorization code lấy tokens
+            import requests as req
+            
+            token_url = "https://oauth2.googleapis.com/token"
+            data = {
+                'code': code,
+                'client_id': config.client_id,
+                'client_secret': config.client_secret,
+                'redirect_uri': config.redirect_uri,
+                'grant_type': 'authorization_code'
+            }
+            
+            response = req.post(token_url, data=data, timeout=30)
+            result = response.json()
+            
+            if response.status_code >= 400 or 'error' in result:
+                return request.render('dnu_meeting_asset.google_auth_error', {
+                    'error': result.get('error', 'token_exchange_failed'),
+                    'error_description': result.get('error_description', str(result))
+                })
+            
+            # Lưu tokens
+            access_token = result.get('access_token')
+            refresh_token = result.get('refresh_token')
+            expires_in = result.get('expires_in', 3600)
+            
+            # CHỈ ghi đè refresh_token nếu có (Google chỉ trả về lần đầu)
+            vals = {
+                'access_token': access_token,
+                'token_expiry': datetime.now() + timedelta(seconds=expires_in - 60)
+            }
+            
+            if refresh_token:
+                vals['refresh_token'] = refresh_token
+            
+            config.write(vals)
+            
+            return request.render('dnu_meeting_asset.google_auth_success', {
+                'config_name': config.name
+            })
+            
+        except Exception as e:
+            return request.render('dnu_meeting_asset.google_auth_error', {
+                'error': 'exception',
+                'error_description': str(e)
+            })

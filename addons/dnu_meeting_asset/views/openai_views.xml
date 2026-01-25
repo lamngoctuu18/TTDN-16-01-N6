@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== OpenAI Configuration Views ===================== -->
+    
+    <!-- Form View -->
+    <record id="view_openai_configuration_form" model="ir.ui.view">
+        <field name="name">openai.configuration.form</field>
+        <field name="model">openai.configuration</field>
+        <field name="arch" type="xml">
+            <form string="Cấu hình OpenAI">
+                <header>
+                    <button name="test_connection" 
+                            type="object" 
+                            string="🔗 Kiểm tra kết nối" 
+                            class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="test_connection" icon="fa-check-circle">
+                            <span>Test API</span>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Mặc định" bg_color="bg-success" attrs="{'invisible': [('is_default', '=', False)]}"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Tên cấu hình"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="🔑 Xác thực API">
+                            <field name="api_key" password="True" placeholder="sk-proj-..."/>
+                            <field name="model_name"/>
+                            <field name="is_default"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="⚙️ Tham số">
+                            <field name="max_tokens"/>
+                            <field name="temperature" widget="float"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="📊 Thống kê sử dụng">
+                            <field name="total_requests"/>
+                            <field name="total_tokens_used"/>
+                            <field name="last_used"/>
+                        </group>
+                        <group string="🔴 Trạng thái">
+                            <field name="status" widget="badge" 
+                                   decoration-success="status == 'active'"
+                                   decoration-danger="status == 'error'"
+                                   decoration-warning="status == 'quota_exceeded'"/>
+                            <field name="last_error" attrs="{'invisible': [('last_error', '=', False)]}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="📖 Hướng dẫn">
+                            <div class="alert alert-info" role="alert">
+                                <h4><i class="fa fa-info-circle"/> Cách lấy API Key OpenAI</h4>
+                                <ol>
+                                    <li>Truy cập <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></li>
+                                    <li>Đăng nhập hoặc tạo tài khoản OpenAI</li>
+                                    <li>Click "Create new secret key"</li>
+                                    <li>Copy key và dán vào trường API Key ở trên</li>
+                                    <li>Bấm "Kiểm tra kết nối" để xác nhận</li>
+                                </ol>
+                                <hr/>
+                                <h5><i class="fa fa-lightbulb-o"/> Lưu ý về Model</h5>
+                                <ul>
+                                    <li><b>GPT-4o Mini:</b> Nhanh, tiết kiệm chi phí - phù hợp cho hầu hết tác vụ</li>
+                                    <li><b>GPT-4o:</b> Mạnh mẽ nhất, phù hợp cho phân tích phức tạp</li>
+                                    <li><b>GPT-4 Turbo:</b> Cân bằng giữa tốc độ và chất lượng</li>
+                                    <li><b>GPT-3.5 Turbo:</b> Rẻ nhất, phù hợp cho tác vụ đơn giản</li>
+                                </ul>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View -->
+    <record id="view_openai_configuration_tree" model="ir.ui.view">
+        <field name="name">openai.configuration.tree</field>
+        <field name="model">openai.configuration</field>
+        <field name="arch" type="xml">
+            <tree string="Cấu hình OpenAI">
+                <field name="name"/>
+                <field name="model_name"/>
+                <field name="status" widget="badge" 
+                       decoration-success="status == 'active'"
+                       decoration-danger="status == 'error'"
+                       decoration-warning="status == 'quota_exceeded'"/>
+                <field name="is_default"/>
+                <field name="total_requests"/>
+                <field name="total_tokens_used"/>
+                <field name="last_used"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_openai_configuration" model="ir.actions.act_window">
+        <field name="name">Cấu hình OpenAI</field>
+        <field name="res_model">openai.configuration</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cấu hình OpenAI API để sử dụng tính năng AI
+            </p>
+            <p>
+                Thêm API Key từ OpenAI để bắt đầu sử dụng các tính năng AI như:
+                <ul>
+                    <li>Hỏi đáp về tài sản</li>
+                    <li>Tạo biên bản cuộc họp</li>
+                    <li>Gợi ý thời gian họp</li>
+                    <li>Phân tích rủi ro tài sản</li>
+                </ul>
+            </p>
+        </field>
+    </record>
+    
+    <!-- ===================== AI Wizard Views ===================== -->
+    
+    <!-- AI Asset Wizard Form -->
+    <record id="view_ai_asset_wizard_form" model="ir.ui.view">
+        <field name="name">ai.asset.wizard.form</field>
+        <field name="model">ai.asset.wizard</field>
+        <field name="arch" type="xml">
+            <form string="🤖 Trợ lý AI - Tài sản">
+                <group>
+                    <field name="action_type" widget="radio" options="{'horizontal': true}"/>
+                </group>
+                <group attrs="{'invisible': [('action_type', '!=', 'qa')]}">
+                    <field name="question" placeholder="Ví dụ: Laptop Dell nào còn bảo hành? Ai đang giữ máy chiếu?"/>
+                    <field name="asset_ids" widget="many2many_tags" 
+                           placeholder="Để trống = tìm kiếm tất cả tài sản"/>
+                </group>
+                <group attrs="{'invisible': [('action_type', '!=', 'maintenance')]}">
+                    <field name="asset_id" options="{'no_create': True}"/>
+                </group>
+                <group attrs="{'invisible': [('action_type', '!=', 'risk')]}">
+                    <field name="asset_ids" widget="many2many_tags" 
+                           placeholder="Để trống = phân tích tất cả tài sản"/>
+                </group>
+                <div attrs="{'invisible': [('show_result', '=', False)]}" class="mt-3">
+                    <field name="result" readonly="1"/>
+                </div>
+                <field name="show_result" invisible="1"/>
+                <footer>
+                    <button name="action_execute" type="object" string="🚀 Thực hiện" class="btn-primary"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- AI Meeting Wizard Form -->
+    <record id="view_ai_meeting_wizard_form" model="ir.ui.view">
+        <field name="name">ai.meeting.wizard.form</field>
+        <field name="model">ai.meeting.wizard</field>
+        <field name="arch" type="xml">
+            <form string="🤖 Trợ lý AI - Phòng họp">
+                <group>
+                    <field name="action_type" widget="radio" options="{'horizontal': true}"/>
+                </group>
+                
+                <!-- Summary -->
+                <group attrs="{'invisible': [('action_type', '!=', 'summary')]}" string="Tạo biên bản họp">
+                    <field name="booking_id" domain="[('state', 'in', ['done', 'in_progress', 'confirmed'])]"/>
+                    <field name="meeting_notes" placeholder="Ghi chú nội dung cuộc họp để tạo biên bản chi tiết hơn..."/>
+                </group>
+                
+                <!-- Schedule -->
+                <group attrs="{'invisible': [('action_type', '!=', 'schedule')]}" string="Gợi ý thời gian họp">
+                    <field name="attendee_ids" widget="many2many_tags"/>
+                    <field name="duration_hours"/>
+                    <field name="preferred_date"/>
+                </group>
+                
+                <!-- Agenda -->
+                <group attrs="{'invisible': [('action_type', '!=', 'agenda')]}" string="Tạo agenda cuộc họp">
+                    <field name="meeting_subject" placeholder="Ví dụ: Họp review dự án Q1"/>
+                    <field name="meeting_description" placeholder="Mô tả thêm về cuộc họp..."/>
+                    <field name="duration_hours"/>
+                </group>
+                
+                <!-- Chat -->
+                <group attrs="{'invisible': [('action_type', '!=', 'chat')]}" string="Chat với AI">
+                    <field name="chat_message" placeholder="Hỏi bất cứ điều gì về phòng họp, đặt lịch, quy trình..."/>
+                </group>
+                
+                <div attrs="{'invisible': [('show_result', '=', False)]}" class="mt-3">
+                    <field name="result" readonly="1"/>
+                </div>
+                <field name="show_result" invisible="1"/>
+                <footer>
+                    <button name="action_execute" type="object" string="🚀 Thực hiện" class="btn-primary"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- AI HR Wizard Form -->
+    <record id="view_ai_hr_wizard_form" model="ir.ui.view">
+        <field name="name">ai.hr.wizard.form</field>
+        <field name="model">ai.hr.wizard</field>
+        <field name="arch" type="xml">
+            <form string="👥 AI Nhân sự">
+                <group>
+                    <field name="action_type" widget="radio" options="{'horizontal': true}"/>
+                </group>
+                
+                <group attrs="{'invisible': [('action_type', '!=', 'chat')]}">
+                    <field name="message" placeholder="Hỏi về nhân viên, phòng ban, chức vụ..." nolabel="1"/>
+                </group>
+                
+                <group attrs="{'invisible': [('action_type', '!=', 'department_analysis')]}">
+                    <field name="department_id"/>
+                </group>
+                
+                <group attrs="{'invisible': [('action_type', '!=', 'employee_search')]}">
+                    <field name="search_criteria"/>
+                </group>
+                
+                <div attrs="{'invisible': [('show_result', '=', False)]}" class="mt-3">
+                    <field name="result" readonly="1" nolabel="1"/>
+                </div>
+                <field name="show_result" invisible="1"/>
+                <footer>
+                    <button name="action_execute" type="object" string="🚀 Thực hiện" class="btn-primary"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Actions for Wizards -->
+    <record id="action_ai_asset_wizard" model="ir.actions.act_window">
+        <field name="name">🤖 AI Trợ lý Tài sản</field>
+        <field name="res_model">ai.asset.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    
+    <record id="action_ai_meeting_wizard" model="ir.actions.act_window">
+        <field name="name">🤖 AI Trợ lý Phòng họp</field>
+        <field name="res_model">ai.meeting.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    
+    <record id="action_ai_hr_wizard" model="ir.actions.act_window">
+        <field name="name">👥 AI Trợ lý Nhân sự</field>
+        <field name="res_model">ai.hr.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

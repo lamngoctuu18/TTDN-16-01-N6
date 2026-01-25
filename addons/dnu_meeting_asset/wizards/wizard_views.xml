@@ -11,7 +11,7 @@
                     <group>
                         <group string="Thông tin cuộc họp">
                             <field name="subject" placeholder="Ví dụ: Họp giao ban tuần"/>
-                            <field name="organizer_id"/>
+                            <field name="organizer_id" options="{'no_quick_create': True}" context="{'form_view_ref': 'hr.view_employee_form'}"/>
                         </group>
                         <group string="Thời gian">
                             <field name="date"/>
@@ -22,7 +22,6 @@
                     <group>
                         <group string="Yêu cầu">
                             <field name="num_attendees"/>
-                            <field name="attendee_ids" widget="many2many_tags"/>
                         </group>
                         <group string="Tiện nghi cần thiết">
                             <field name="need_projector"/>
@@ -31,8 +30,14 @@
                         </group>
                     </group>
                     
-                    <separator string="Thiết bị bổ sung"/>
-                    <field name="required_equipment_ids" widget="many2many_tags"/>
+                    <group string="Loại cuộc họp">
+                        <field name="meeting_type" widget="radio"/>
+                    </group>
+                    
+                    <group string="Tích hợp (chỉ cho họp online)" attrs="{'invisible': [('meeting_type', '!=', 'online')]}">
+                        <field name="create_zoom_meeting"/>
+                        <field name="sync_google_calendar"/>
+                    </group>
                     
                     <separator string="Phòng gợi ý"/>
                     <field name="message" readonly="1" nolabel="1"/>
@@ -41,11 +46,20 @@
                     <field name="end_datetime" invisible="1"/>
                     
                     <group>
-                        <field name="suggested_room_ids" widget="many2many_tags" readonly="1" nolabel="1" options="{'color_field': 'color'}"/>
+                        <field name="suggested_room_ids" readonly="1" nolabel="1">
+                            <tree>
+                                <field name="name"/>
+                                <field name="capacity"/>
+                                <field name="location"/>
+                            </tree>
+                        </field>
                     </group>
                     
                     <group>
-                        <field name="selected_room_id" domain="[('id', 'in', suggested_room_ids)]" options="{'no_create': True}"/>
+                        <field name="selected_room_id" 
+                               domain="[('id', 'in', suggested_room_ids)]" 
+                               options="{'no_create': True, 'no_quick_create': True}"
+                               context="{'tree_view_ref': 'dnu_meeting_asset.view_meeting_room_tree'}"/>
                     </group>
                     
                     <group string="Mô tả cuộc họp">
@@ -94,6 +108,50 @@
                     </group>
                     <footer>
                         <button name="action_return" string="Xác nhận trả" type="object" class="btn-primary"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- ============================================= -->
+        <!-- SIGNATURE WIZARD                              -->
+        <!-- ============================================= -->
+        
+        <record id="view_asset_signature_wizard_form" model="ir.ui.view">
+            <field name="name">dnu.asset.signature.wizard.form</field>
+            <field name="model">dnu.asset.signature.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Chữ ký điện tử">
+                    <sheet>
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Xác nhận chữ ký điện tử</strong><br/>
+                            Bằng việc ký vào biên bản này, bạn xác nhận đã nhận/giao tài sản và đồng ý với các điều khoản bàn giao.
+                        </div>
+                        
+                        <group>
+                            <field name="handover_id" invisible="1"/>
+                            <field name="signature_type" readonly="1"/>
+                            
+                            <field name="signature" widget="image" options="{'size': [400, 200]}" 
+                                   class="oe_avatar" nolabel="1"/>
+                            
+                            <div class="alert alert-info" role="alert">
+                                <i class="fa fa-info-circle"/> Bạn có thể vẽ chữ ký trực tiếp hoặc tải lên hình ảnh chữ ký.
+                            </div>
+                            
+                            <field name="confirm_text" placeholder="Nhập 'XÁC NHẬN' để xác nhận"/>
+                            
+                            <div class="alert alert-danger" role="alert">
+                                <strong>Lưu ý quan trọng:</strong><br/>
+                                - Chữ ký này có giá trị pháp lý<br/>
+                                - Bạn chịu trách nhiệm về việc bàn giao tài sản<br/>
+                                - Không thể thay đổi sau khi ký
+                            </div>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button string="Xác nhận ký" name="action_sign" type="object" class="btn-primary"/>
                         <button string="Hủy" class="btn-secondary" special="cancel"/>
                     </footer>
                 </form>

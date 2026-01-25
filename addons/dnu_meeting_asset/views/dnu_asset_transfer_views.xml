@@ -34,11 +34,21 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,in_transit,completed"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
+                            <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
                         </h1>
                     </div>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
+                                <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
+                            </button>
+                        </div>
                     <group>
                         <group>
                             <field name="date"/>

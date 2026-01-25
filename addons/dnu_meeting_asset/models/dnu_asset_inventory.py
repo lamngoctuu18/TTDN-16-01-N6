@@ -10,6 +10,62 @@ class AssetInventory(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'date desc'
 
+    def _get_default_responsible(self):
+        """Tự động load nhân viên Kiểm kê thuộc phòng Bảo Trì"""
+        # Tìm phòng Bảo Trì
+        don_vi_bao_tri = self.env['don_vi'].search([
+            '|',
+            ('ten_don_vi', 'ilike', 'bảo trì'),
+            ('ten_don_vi', 'ilike', 'bảo tri')
+        ], limit=1)
+        
+        if not don_vi_bao_tri:
+            return self.env.user.employee_id
+        
+        # Tìm chức vụ Kiểm kê
+        chuc_vu_kiem_ke = self.env['chuc_vu'].search([
+            '|',
+            ('ten_chuc_vu', 'ilike', 'kiểm kê'),
+            ('ten_chuc_vu', 'ilike', 'kiem ke')
+        ], limit=1)
+        
+        if not chuc_vu_kiem_ke:
+            return self.env.user.employee_id
+        
+        # Tìm nhân viên có chức vụ Kiểm kê thuộc Bảo Trì
+        nhan_vien = self.env['nhan_vien'].search([
+            ('don_vi_chinh_id', '=', don_vi_bao_tri.id),
+            ('chuc_vu_chinh_id', '=', chuc_vu_kiem_ke.id)
+        ], limit=1)
+        
+        if nhan_vien and nhan_vien.hr_employee_id:
+            return nhan_vien.hr_employee_id
+        
+        return self.env.user.employee_id
+
+    def _get_default_team(self):
+        """Tự động load đội kiểm kê từ phòng Bảo Trì"""
+        # Tìm phòng Bảo Trì
+        don_vi_bao_tri = self.env['don_vi'].search([
+            '|',
+            ('ten_don_vi', 'ilike', 'bảo trì'),
+            ('ten_don_vi', 'ilike', 'bảo tri')
+        ], limit=1)
+        
+        if not don_vi_bao_tri:
+            return False
+        
+        # Tìm tất cả nhân viên thuộc phòng Bảo Trì
+        nhan_viens = self.env['nhan_vien'].search([
+            ('don_vi_chinh_id', '=', don_vi_bao_tri.id)
+        ])
+        
+        if nhan_viens:
+            hr_employees = nhan_viens.filtered(lambda n: n.hr_employee_id).mapped('hr_employee_id')
+            return hr_employees.ids if hr_employees else False
+        
+        return False
+
     name = fields.Char(
         string='Mã kiểm kê',
         required=True,
@@ -59,7 +115,8 @@ class AssetInventory(models.Model):
         'hr.employee',
         string='Người chịu trách nhiệm',
         required=True,
-        default=lambda self: self.env.user.employee_id,
+        default=lambda self: self._get_default_responsible(),
+        domain="[('nhan_vien_id.don_vi_chinh_id.ten_don_vi', 'ilike', 'bảo trì'), ('nhan_vien_id.chuc_vu_chinh_id.ten_chuc_vu', 'ilike', 'kiểm kê')]",
         tracking=True
     )
     team_ids = fields.Many2many(
@@ -67,7 +124,9 @@ class AssetInventory(models.Model):
         'inventory_team_rel',
         'inventory_id',
         'employee_id',
-        string='Đội kiểm kê'
+        string='Đội kiểm kê',
+        default=lambda self: self._get_default_team(),
+        domain="[('nhan_vien_id.don_vi_chinh_id.ten_don_vi', 'ilike', 'bảo trì')]"
     )
     
     # Status

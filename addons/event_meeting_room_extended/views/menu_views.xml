@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Menu -->
+        <menuitem id="menu_event_meeting_room_root"
+                  name="Phòng Họp"
+                  parent="event.event_main_menu"
+                  sequence="50"
+                  groups="event.group_event_user"/>
+
+        <menuitem id="menu_event_meeting_room"
+                  name="Phòng Họp"
+                  parent="menu_event_meeting_room_root"
+                  action="action_event_meeting_room"
+                  sequence="10"/>
+    </data>
+</odoo>

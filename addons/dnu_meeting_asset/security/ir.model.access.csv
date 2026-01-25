@@ -27,6 +27,11 @@ access_dnu_asset_disposal_user,access.dnu.asset.disposal.user,model_dnu_asset_di
 access_dnu_asset_disposal_manager,access.dnu.asset.disposal.manager,model_dnu_asset_disposal,group_asset_manager,1,1,1,1
 access_dnu_asset_disposal_batch_user,access.dnu.asset.disposal.batch.user,model_dnu_asset_disposal_batch,group_asset_user,1,0,0,0
 access_dnu_asset_disposal_batch_manager,access.dnu.asset.disposal.batch.manager,model_dnu_asset_disposal_batch,group_asset_manager,1,1,1,1
+access_dnu_asset_disposal_rule_user,access.dnu.asset.disposal.rule.user,model_dnu_asset_disposal_rule,group_asset_user,1,0,0,0
+access_dnu_asset_disposal_rule_manager,access.dnu.asset.disposal.rule.manager,model_dnu_asset_disposal_rule,group_asset_manager,1,1,1,1
+access_dnu_asset_handover_user,access.dnu.asset.handover.user,model_dnu_asset_handover,group_asset_user,1,1,1,0
+access_dnu_asset_handover_manager,access.dnu.asset.handover.manager,model_dnu_asset_handover,group_asset_manager,1,1,1,1
+access_dnu_asset_signature_wizard,access.dnu.asset.signature.wizard,model_dnu_asset_signature_wizard,group_asset_user,1,1,1,1
 access_dnu_asset_dashboard_user,access.dnu.asset.dashboard.user,model_dnu_asset_dashboard,group_asset_user,1,0,0,0
 access_dnu_asset_dashboard_manager,access.dnu.asset.dashboard.manager,model_dnu_asset_dashboard,group_asset_manager,1,0,0,0
 access_dnu_meeting_room_user,access.dnu.meeting.room.user,model_dnu_meeting_room,group_meeting_user,1,0,0,0
@@ -37,3 +42,13 @@ access_dnu_asset_public,access.dnu.asset.public,model_dnu_asset,base.group_user,
 access_dnu_meeting_room_public,access.dnu.meeting.room.public,model_dnu_meeting_room,base.group_user,1,0,0,0
 access_dnu_quick_booking_wizard,access.dnu.quick.booking.wizard,model_dnu_quick_booking_wizard,group_meeting_user,1,1,1,1
 access_dnu_asset_return_wizard,access.dnu.asset.return.wizard,model_dnu_asset_return_wizard,group_asset_user,1,1,1,1
+access_zoom_integration_user,access.zoom.integration.user,model_zoom_integration,group_meeting_user,1,0,0,0
+access_zoom_integration_manager,access.zoom.integration.manager,model_zoom_integration,group_facility_staff,1,1,1,1
+access_google_calendar_integration_user,access.google.calendar.integration.user,model_google_calendar_integration,group_meeting_user,1,0,0,0
+access_google_calendar_integration_manager,access.google.calendar.integration.manager,model_google_calendar_integration,group_facility_staff,1,1,1,1
+access_openai_configuration_manager,access.openai.configuration.manager,model_openai_configuration,base.group_system,1,1,1,1
+access_ai_asset_wizard_user,access.ai.asset.wizard.user,model_ai_asset_wizard,group_asset_user,1,1,1,1
+access_ai_meeting_wizard_user,access.ai.meeting.wizard.user,model_ai_meeting_wizard,group_meeting_user,1,1,1,1
+access_ai_hr_wizard_user,access.ai.hr.wizard.user,model_ai_hr_wizard,base.group_user,1,1,1,1
+access_dnu_user_guide_user,access.dnu.user.guide.user,model_dnu_user_guide,base.group_user,1,0,0,0
+access_dnu_user_guide_admin,access.dnu.user.guide.admin,model_dnu_user_guide,base.group_system,1,1,1,1

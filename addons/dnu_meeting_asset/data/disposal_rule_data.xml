@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!--
+            Default rules:
+            Suggested price = current_value * (coefficient_percent / 100)
+            These are generic rules (no category) to give sane starting defaults.
+        -->
+
+        <!-- SALE -->
+        <record id="dnu_asset_disposal_rule_sale_excess" model="dnu.asset.disposal.rule">
+            <field name="name">Bán - Thừa</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">10</field>
+            <field name="disposal_type">sale</field>
+            <field name="reason">excess</field>
+            <field name="coefficient_percent">70</field>
+        </record>
+
+        <record id="dnu_asset_disposal_rule_sale_upgraded" model="dnu.asset.disposal.rule">
+            <field name="name">Bán - Nâng cấp</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">20</field>
+            <field name="disposal_type">sale</field>
+            <field name="reason">upgraded</field>
+            <field name="coefficient_percent">60</field>
+        </record>
+
+        <record id="dnu_asset_disposal_rule_sale_obsolete" model="dnu.asset.disposal.rule">
+            <field name="name">Bán - Lỗi thời</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">30</field>
+            <field name="disposal_type">sale</field>
+            <field name="reason">obsolete</field>
+            <field name="coefficient_percent">50</field>
+        </record>
+
+        <record id="dnu_asset_disposal_rule_sale_end_life" model="dnu.asset.disposal.rule">
+            <field name="name">Bán - Hết tuổi thọ</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">40</field>
+            <field name="disposal_type">sale</field>
+            <field name="reason">end_life</field>
+            <field name="coefficient_percent">30</field>
+        </record>
+
+        <record id="dnu_asset_disposal_rule_sale_damaged" model="dnu.asset.disposal.rule">
+            <field name="name">Bán - Hư hỏng không sửa được</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">50</field>
+            <field name="disposal_type">sale</field>
+            <field name="reason">damaged</field>
+            <field name="coefficient_percent">10</field>
+        </record>
+
+        <record id="dnu_asset_disposal_rule_sale_other" model="dnu.asset.disposal.rule">
+            <field name="name">Bán - Khác (mặc định)</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">90</field>
+            <field name="disposal_type">sale</field>
+            <field name="reason">other</field>
+            <field name="coefficient_percent">50</field>
+        </record>
+
+        <!-- DONATION -->
+        <record id="dnu_asset_disposal_rule_donation_default" model="dnu.asset.disposal.rule">
+            <field name="name">Tặng/Quyên góp (mặc định)</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">10</field>
+            <field name="disposal_type">donation</field>
+            <field name="coefficient_percent">0</field>
+            <field name="max_value">0</field>
+        </record>
+
+        <!-- SCRAP -->
+        <record id="dnu_asset_disposal_rule_scrap_default" model="dnu.asset.disposal.rule">
+            <field name="name">Hủy/Vứt bỏ (mặc định)</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">10</field>
+            <field name="disposal_type">scrap</field>
+            <field name="coefficient_percent">0</field>
+            <field name="max_value">0</field>
+        </record>
+
+        <!-- RETURN TO SUPPLIER -->
+        <record id="dnu_asset_disposal_rule_return_default" model="dnu.asset.disposal.rule">
+            <field name="name">Trả lại nhà cung cấp (mặc định)</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">10</field>
+            <field name="disposal_type">return</field>
+            <field name="coefficient_percent">100</field>
+        </record>
+
+        <!-- EXCHANGE -->
+        <record id="dnu_asset_disposal_rule_exchange_default" model="dnu.asset.disposal.rule">
+            <field name="name">Đổi mới (mặc định)</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="sequence">10</field>
+            <field name="disposal_type">exchange</field>
+            <field name="coefficient_percent">20</field>
+        </record>
+
+    </data>
+</odoo>

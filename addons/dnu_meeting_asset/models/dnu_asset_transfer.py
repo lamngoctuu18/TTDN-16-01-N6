@@ -162,6 +162,46 @@ class AssetTransfer(models.Model):
         ondelete='set null'
     )
 
+    van_ban_den_count = fields.Integer(
+        string='Văn bản đến',
+        compute='_compute_van_ban_den_count',
+        store=False
+    )
+
+    def _compute_van_ban_den_count(self):
+        VanBanDen = self.env['van_ban_den']
+        for rec in self:
+            rec.van_ban_den_count = VanBanDen.search_count([
+                ('source_model', '=', rec._name),
+                ('source_res_id', '=', rec.id),
+            ])
+
+    def action_view_van_ban_den(self):
+        self.ensure_one()
+        action = self.env.ref('quan_ly_van_ban.action_van_ban_den').read()[0]
+        action['domain'] = [('source_model', '=', self._name), ('source_res_id', '=', self.id)]
+        action['context'] = {
+            'default_source_model': self._name,
+            'default_source_res_id': self.id,
+        }
+        return action
+
+    def action_create_van_ban_den(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tạo văn bản đến',
+            'res_model': 'van_ban_den',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_source_model': self._name,
+                'default_source_res_id': self.id,
+                'default_ten_van_ban': f'Văn bản đến - Luân chuyển {self.name}',
+                'default_due_date': fields.Date.to_string(self.date) if self.date else False,
+            },
+        }
+
     @api.model
     def create(self, vals):
         if vals.get('name', _('New')) == _('New'):

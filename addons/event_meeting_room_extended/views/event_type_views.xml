@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Event Type Form - Add Community Settings -->
+    <record id="view_event_type_form_community" model="ir.ui.view">
+        <field name="name">event.type.form.community</field>
+        <field name="model">event.type</field>
+        <field name="inherit_id" ref="event.view_event_type_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Cộng Đồng &amp; Phòng Họp" name="community_settings">
+                    <group>
+                        <group string="Tính Năng Cộng Đồng">
+                            <field name="allow_community"/>
+                            <field name="allow_room_creation" attrs="{'invisible': [('allow_community', '=', False)]}"/>
+                            <field name="auto_room_creation" attrs="{'invisible': [('allow_community', '=', False)]}"/>
+                        </group>
+                        <group string="Cài Đặt Phòng">
+                            <field name="default_room_capacity" attrs="{'invisible': [('allow_community', '=', False)]}"/>
+                            <field name="room_auto_archive_hours" attrs="{'invisible': [('allow_community', '=', False)]}"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

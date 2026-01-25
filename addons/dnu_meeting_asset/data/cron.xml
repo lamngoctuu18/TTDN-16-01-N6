@@ -26,7 +26,21 @@
             <field name="active" eval="True"/>
         </record>
 
-        <!-- Cron: Check Overdue Lending -->
+        <!-- Cron: Send Email Reminders 30 minutes before meeting -->
+        <record id="cron_send_meeting_email_reminder" model="ir.cron">
+            <field name="name">Gửi email nhắc lịch họp (30 phút trước)</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_email_reminders()</field>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+            <field name="doall" eval="False"/>
+            <field name="priority">5</field>
+        </record>
+
+        <!-- Cron: Check Overdue Lending (Legacy - keep for backward compatibility) -->
         <record id="cron_check_overdue_lending" model="ir.cron">
             <field name="name">Kiểm tra mượn tài sản quá hạn</field>
             <field name="model_id" ref="model_dnu_asset_lending"/>
@@ -36,6 +50,19 @@
             <field name="interval_type">hours</field>
             <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
+        </record>
+
+        <!-- Cron: Send Return Reminders -->
+        <record id="cron_send_return_reminders" model="ir.cron">
+            <field name="name">Gửi nhắc trả tài sản</field>
+            <field name="model_id" ref="model_dnu_asset_lending"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_return_reminders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+            <field name="nextcall" eval="(datetime.now() + timedelta(days=1)).replace(hour=8, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
         </record>
 
         <!-- Cron: Generate Scheduled Maintenance -->
@@ -60,6 +87,47 @@
             <field name="interval_type">days</field>
             <field name="numbercall">-1</field>
             <field name="active" eval="True"/>
+        </record>
+
+        <!-- ====== AUTOMATION CRON JOBS ====== -->
+
+        <!-- Cron: Lending Reminder & Escalation (Feature 1) -->
+        <record id="cron_lending_reminder_escalation" model="ir.cron">
+            <field name="name">Nhắc trả tài sản + Escalation</field>
+            <field name="model_id" ref="model_dnu_asset_lending"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_lending_reminder_escalation()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+            <field name="nextcall" eval="(datetime.now() + timedelta(days=1)).replace(hour=7, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+        </record>
+
+        <!-- Cron: Warranty/Inspection Reminder (Feature 4) -->
+        <record id="cron_warranty_inspection_reminder" model="ir.cron">
+            <field name="name">Nhắc hết hạn bảo hành/kiểm định</field>
+            <field name="model_id" ref="model_dnu_asset"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_warranty_inspection_reminder()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+            <field name="nextcall" eval="(datetime.now() + timedelta(days=1)).replace(hour=8, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+        </record>
+
+        <!-- Cron: Periodic Inventory Generation (Feature 6) -->
+        <record id="cron_generate_periodic_inventory" model="ir.cron">
+            <field name="name">Tạo kiểm kê định kỳ hàng tháng</field>
+            <field name="model_id" ref="model_dnu_asset_inventory"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_generate_periodic_inventory()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+            <field name="nextcall" eval="(datetime.now() + timedelta(days=1)).replace(hour=6, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
         </record>
 
     </data>

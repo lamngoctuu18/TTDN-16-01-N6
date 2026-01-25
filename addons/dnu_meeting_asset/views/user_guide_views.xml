@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_dnu_user_guide_form" model="ir.ui.view">
+            <field name="name">dnu.user.guide.form</field>
+            <field name="model">dnu.user.guide</field>
+            <field name="arch" type="xml">
+                <form string="Hướng dẫn sử dụng">
+                    <sheet>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                        <field name="content" nolabel="1"/>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="dnu_user_guide_record" model="dnu.user.guide">
+            <field name="name">Hướng dẫn sử dụng - Quản lý tài sản &amp; Phòng họp</field>
+            <field name="content" type="html">
+                <div class="o_form_readonly">
+                    <h2>1) Quản lý tài sản</h2>
+                    <ol>
+                        <li>Vào menu <b>Quản lý tài sản → Tài sản</b> để tạo hoặc cập nhật thông tin tài sản.</li>
+                        <li>Vào <b>Lịch sử gán</b> để gán tài sản cho nhân viên và theo dõi trạng thái.</li>
+                        <li>Vào <b>Mượn tài sản</b> để tạo phiếu mượn/trả.</li>
+                        <li>Vào <b>Bảo trì</b> để tạo yêu cầu sửa chữa và theo dõi tiến độ.</li>
+                        <li>Vào <b>Luân chuyển</b> hoặc <b>Thanh lý</b> khi cần điều chuyển/hủy tài sản.</li>
+                    </ol>
+
+                    <h2>2) Quản lý phòng họp</h2>
+                    <ol>
+                        <li>Vào <b>Quản lý phòng họp → Phòng họp</b> để tạo phòng, cấu hình tiện nghi.</li>
+                        <li>Vào <b>Đặt phòng</b> để tạo lịch họp, kiểm tra xung đột.</li>
+                        <li>Dùng <b>Đặt phòng nhanh</b> để đặt lịch nhanh theo số người và tiện nghi.</li>
+                    </ol>
+
+                    <h2>3) Văn bản đến liên quan</h2>
+                    <p>Mỗi phiếu nghiệp vụ có nút <b>Văn bản đến</b> để xem danh sách văn bản đã liên kết. Tạo mới văn bản trong danh sách đó để tự động gắn nguồn.</p>
+
+                    <h2>4) Mẹo thao tác nhanh</h2>
+                    <ul>
+                        <li>Dùng bộ lọc ở màn danh sách để tìm nhanh theo trạng thái.</li>
+                        <li>Với mỗi form, phần <b>Chatter</b> giúp theo dõi hoạt động và trao đổi nội bộ.</li>
+                    </ul>
+                </div>
+            </field>
+        </record>
+
+        <record id="action_dnu_user_guide" model="ir.actions.act_window">
+            <field name="name">Hướng dẫn sử dụng</field>
+            <field name="res_model">dnu.user.guide</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_dnu_user_guide_form"/>
+            <field name="res_id" ref="dnu_user_guide_record"/>
+            <field name="target">current</field>
+        </record>
+
+    </data>
+</odoo>

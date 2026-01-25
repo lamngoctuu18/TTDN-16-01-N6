@@ -35,11 +35,21 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,in_progress,done"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
+                            <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
                         </h1>
                     </div>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
+                                <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
+                            </button>
+                        </div>
                     <group>
                         <group>
                             <field name="date"/>
@@ -60,7 +70,9 @@
                             <field name="current_value" widget="monetary"/>
                         </group>
                         <group>
+                            <field name="suggested_disposal_value" widget="monetary" readonly="1"/>
                             <field name="disposal_value" widget="monetary"/>
+                            <field name="disposal_value_is_manual" invisible="1"/>
                             <field name="loss_gain" widget="monetary" decoration-success="loss_gain &gt; 0" decoration-danger="loss_gain &lt; 0"/>
                         </group>
                     </group>

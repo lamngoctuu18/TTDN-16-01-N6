@@ -12,11 +12,14 @@
                           date_stop="end_datetime" 
                           color="room_id" 
                           mode="week"
-                          quick_add="False"
-                          event_open_popup="True">
+                          quick_add="True"
+                          event_open_popup="True"
+                          form_view_id="%(view_dnu_meeting_booking_form)d">
                     <field name="subject"/>
                     <field name="room_id"/>
-                    <field name="organizer_id"/>
+                    <field name="organizer_name"/>
+                    <field name="nhan_vien_to_chuc_id" invisible="1"/>
+                    <field name="organizer_id" invisible="1"/>
                     <field name="state" filters="1" invisible="1"/>
                 </calendar>
             </field>
@@ -31,6 +34,7 @@
                     <field name="name"/>
                     <field name="subject"/>
                     <field name="room_id"/>
+                    <field name="meeting_type" widget="badge" decoration-info="meeting_type=='online'" decoration-success="meeting_type=='offline'"/>
                     <field name="organizer_name" string="Người tổ chức"/>
                     <field name="nhan_vien_to_chuc_id" optional="hide"/>
                     <field name="organizer_id" optional="hide"/>
@@ -38,6 +42,7 @@
                     <field name="end_datetime"/>
                     <field name="duration" widget="float_time"/>
                     <field name="num_attendees"/>
+                    <field name="zoom_meeting_id" optional="hide"/>
                     <field name="state" widget="badge" decoration-info="state=='confirmed'" decoration-warning="state=='in_progress'" decoration-success="state=='done'"/>
                     <button name="action_confirm" string="Duyệt" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'submitted')]}" icon="fa-check"/>
                     <button name="action_cancel" string="Từ chối" type="object" class="btn-danger" attrs="{'invisible': [('state', '!=', 'submitted')]}" icon="fa-times"/>
@@ -54,10 +59,10 @@
                 <form string="Đặt phòng họp">
                     <header>
                         <button name="action_submit" string="Gửi yêu cầu" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'draft')]}"/>
-                        <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'submitted')]}"/>
+                        <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'submitted')]}" groups="dnu_meeting_asset.group_facility_staff"/>
                         <button name="action_checkin" string="Check-in" type="object" class="btn-success" attrs="{'invisible': ['|', ('state', '!=', 'confirmed'), ('can_checkin', '=', False)]}"/>
                         <button name="action_checkout" string="Check-out" type="object" class="btn-warning" attrs="{'invisible': [('state', '!=', 'in_progress')]}"/>
-                        <button name="action_cancel" string="Hủy" type="object" attrs="{'invisible': [('state', 'in', ['done', 'cancelled'])]}"/>
+                        <button name="action_cancel" string="Hủy" type="object" attrs="{'invisible': [('state', 'in', ['done', 'cancelled'])]}" confirm="Bạn có chắc chắn muốn hủy lịch đặt phòng này?"/>
                         <button name="action_suggest_alternatives" string="Gợi ý phòng khác" type="object" attrs="{'invisible': [('has_conflicts', '=', False)]}" class="btn-info"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed,in_progress,done"/>
                     </header>
@@ -65,9 +70,45 @@
                         <field name="can_checkin" invisible="1"/>
                         <field name="has_conflicts" invisible="1"/>
                         <field name="is_past" invisible="1"/>
+                        <field name="zoom_meeting_id" invisible="1"/>
+                        <field name="google_calendar_event_id" invisible="1"/>
+                        
+                        <!-- Stat Buttons -->
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" type="object" name="action_view_room_bookings" icon="fa-calendar">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Lịch</span>
+                                    <span class="o_stat_text">Phòng họp</span>
+                                </div>
+                            </button>
+                            <button class="oe_stat_button" type="object" name="action_open_zoom_meeting" icon="fa-video-camera"
+                                    attrs="{'invisible': [('zoom_meeting_id', '=', False)]}">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Zoom</span>
+                                    <span class="o_stat_text">Meeting</span>
+                                </div>
+                            </button>
+                            <button class="oe_stat_button" type="object" name="action_open_google_calendar" icon="fa-google"
+                                    attrs="{'invisible': [('google_calendar_event_id', '=', False)]}">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Google</span>
+                                    <span class="o_stat_text">Calendar</span>
+                                </div>
+                            </button>
+                            <button class="oe_stat_button" icon="fa-users">
+                                <field name="num_attendees" widget="statinfo" string="Người tham dự"/>
+                            </button>
+                            <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
+                                <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
+                            </button>
+                        </div>
+                        
                         <div class="alert alert-danger" role="alert" attrs="{'invisible': [('has_conflicts', '=', False)]}">
                             <strong><i class="fa fa-exclamation-triangle"/> Cảnh báo:</strong> Có xung đột với booking khác!
                             <field name="conflict_ids" invisible="1"/>
+                        </div>
+                        <div class="alert alert-warning" role="alert" attrs="{'invisible': [('state', '!=', 'cancelled')]}">
+                            <strong><i class="fa fa-ban"/> Đã hủy:</strong> Lịch đặt phòng này đã bị hủy.
                         </div>
                         <div class="oe_title">
                             <h1>
@@ -77,33 +118,112 @@
                                 <field name="subject" placeholder="Chủ đề cuộc họp..."/>
                             </h2>
                         </div>
-                        <group>
-                            <group>
+                        
+                        <style>
+                            .o_booking_modern_form .o_group {
+                                margin-bottom: 20px;
+                            }
+                            .o_booking_modern_form .o_group .o_group_col {
+                                background: #f8f9fa;
+                                padding: 15px;
+                                border-radius: 8px;
+                                border: 1px solid #e9ecef;
+                            }
+                            .o_booking_modern_form h2 {
+                                color: #2980B9;
+                                font-weight: 600;
+                            }
+                            .o_booking_modern_form .alert-info {
+                                background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+                                border-left: 4px solid #2196F3;
+                                color: #1565C0;
+                            }
+                            .o_booking_modern_form .o_field_many2manytags .badge {
+                                background: linear-gradient(135deg, #E67E22 0%, #D35400 100%);
+                                color: white;
+                                padding: 6px 12px;
+                                border-radius: 20px;
+                                font-weight: 500;
+                            }
+                        </style>
+                        
+                        <group class="o_booking_modern_form">
+                            <group string="Thông tin phòng họp">
+                                <field name="num_attendees"/>
+                                <group string="Tiện nghi" col="3">
+                                    <field name="need_projector"/>
+                                    <field name="need_video_conference"/>
+                                    <field name="need_whiteboard"/>
+                                </group>
+                                <field name="suggested_room_ids" invisible="1"/>
+                                <div class="alert alert-success" attrs="{'invisible': [('suggested_room_ids', '=', [])]}" style="padding: 8px 12px; margin: 8px 0; font-size: 12px;">
+                                    <i class="fa fa-check-circle"/> <b>Gợi ý:</b> Hệ thống đã lọc các phòng phù hợp theo số người và tiện nghi.
+                                </div>
                                 <field name="room_id" options="{'no_create': True}"/>
-                                <field name="nhan_vien_to_chuc_id" options="{'no_quick_create': True}" placeholder="Chọn từ hệ thống Nhân sự"/>
-                                <label for="organizer_id" string="-- Hoặc --"/>
-                                <field name="organizer_id" placeholder="Chọn từ HR"/>
-                                <field name="department_id" attrs="{'invisible': [('organizer_id', '=', False)]}"/>
-                            </group>
-                            <group>
+                                <field name="meeting_type" widget="radio"/>
                                 <field name="start_datetime"/>
                                 <field name="end_datetime"/>
                                 <field name="duration" widget="float_time"/>
                             </group>
-                        </group>
-                        <group string="Người tham dự">
-                            <field name="attendee_ids" widget="many2many_tags" options="{'color_field': 'color', 'no_create': True}" nolabel="1"/>
-                            <group>
-                                <field name="num_attendees"/>
-                                <field name="external_attendees"/>
+                            <group string="Người tổ chức">
+                                <field name="nhan_vien_to_chuc_id" string="Người tổ chức" options="{'no_quick_create': True}" placeholder="Chọn người tổ chức"/>
                             </group>
                         </group>
-                        <group string="Thiết bị yêu cầu">
-                            <field name="required_equipment_ids" widget="many2many_tags" nolabel="1"/>
+                        <field name="attendee_ids" invisible="1"/>
+                        <group class="o_booking_modern_form">
+                            <group string="Bổ sung trang thiết bị">
+                                <div class="alert alert-info mb-2" role="alert" style="padding: 8px 12px; font-size: 12px;">
+                                    <i class="fa fa-info-circle"/> <b>Lưu ý:</b> Chỉ hiển thị thiết bị sẵn sàng và chưa bị mượn trong khoảng thời gian đặt phòng.
+                                </div>
+                                <field name="required_equipment_ids" 
+                                       widget="many2many_tags" 
+                                       nolabel="1"
+                                       context="{'tree_view_ref': 'dnu_meeting_asset.view_dnu_asset_tree_selection'}">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="category_id"/>
+                                        <field name="state"/>
+                                    </tree>
+                                </field>
+                            </group>
                         </group>
                         <notebook>
                             <page string="Mô tả">
                                 <field name="description" placeholder="Mô tả chi tiết về cuộc họp..."/>
+                            </page>
+                            <page string="Zoom Meeting" attrs="{'invisible': [('meeting_type', '!=', 'online')]}">
+                                <div class="alert alert-info" role="alert" attrs="{'invisible': [('zoom_meeting_id', '!=', False)]}">
+                                    <i class="fa fa-info-circle"/> Zoom meeting sẽ được tạo tự động khi xác nhận đặt phòng.
+                                </div>
+                                <group attrs="{'invisible': [('zoom_meeting_id', '=', False)]}">
+                                    <group>
+                                        <field name="zoom_password" readonly="1"/>
+                                        <field name="zoom_sync_status" readonly="1"/>
+                                    </group>
+                                    <group>
+                                        <field name="zoom_join_url" widget="url" readonly="1"/>
+                                        <field name="zoom_start_url" widget="url" readonly="1"/>
+                                    </group>
+                                </group>
+                                <div attrs="{'invisible': [('zoom_meeting_id', '=', False)]}">
+                                    <button name="action_open_zoom_meeting" string="🔗 Mở link Zoom" type="object" class="btn-primary"/>
+                                </div>
+                                <div attrs="{'invisible': ['|', ('zoom_meeting_id', '!=', False), ('state', '!=', 'confirmed')]}">
+                                    <button name="action_create_zoom_meeting" string="➕ Tạo Zoom Meeting" type="object" class="btn-success"/>
+                                </div>
+                            </page>
+                            <page string="Google Calendar">
+                                <div class="alert alert-info" role="alert" attrs="{'invisible': [('google_calendar_event_id', '!=', False)]}">
+                                    <i class="fa fa-info-circle"/> Sự kiện sẽ được tự động đồng bộ lên Google Calendar khi xác nhận.
+                                </div>
+                                <group attrs="{'invisible': [('google_calendar_event_id', '=', False)]}">
+                                    <field name="google_calendar_link" widget="url" readonly="1"/>
+                                    <field name="google_sync_status" readonly="1"/>
+                                </group>
+                                <div>
+                                    <button name="action_open_google_calendar" string="📅 Mở Google Calendar" type="object" class="btn-primary mr-2" attrs="{'invisible': [('google_calendar_event_id', '=', False)]}"/>
+                                    <button name="action_sync_google_calendar" string="🔄 Đồng bộ Google Calendar" type="object" class="btn-info" attrs="{'invisible': [('state', 'not in', ['confirmed', 'in_progress'])]}"/>
+                                </div>
                             </page>
                             <page string="Check-in/out" attrs="{'invisible': [('state', 'in', ['draft', 'submitted', 'cancelled'])]}">
                                 <group>
@@ -155,6 +275,9 @@
                     <filter string="Đang diễn ra" name="in_progress" domain="[('state', '=', 'in_progress')]"/>
                     <filter string="Hoàn thành" name="done" domain="[('state', '=', 'done')]"/>
                     <separator/>
+                    <filter string="Họp trực tuyến (Zoom)" name="online" domain="[('meeting_type', '=', 'online')]"/>
+                    <filter string="Họp trực tiếp" name="offline" domain="[('meeting_type', '=', 'offline')]"/>
+                    <separator/>
                     <filter string="Tất cả booking" name="all_bookings" domain="[('state', 'in', ['draft', 'submitted', 'confirmed', 'in_progress'])]"/>
                     <filter string="Của tôi" name="my_bookings" domain="[('organizer_id.user_id', '=', uid)]"/>
                     <filter string="Hôm nay" name="today" domain="[('start_datetime', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0))), ('start_datetime', '&lt;=', datetime.datetime.combine(context_today(), datetime.time(23,59,59)))]"/>
@@ -177,7 +300,7 @@
             <field name="res_model">dnu.meeting.booking</field>
             <field name="view_mode">calendar,tree,form</field>
             <field name="search_view_id" ref="view_dnu_meeting_booking_search"/>
-            <field name="context">{'search_default_confirmed': 1, 'search_default_in_progress': 1}</field>
+            <field name="context">{'search_default_confirmed': 1, 'search_default_in_progress': 1, 'auto_submit_on_create': 1}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
                     Đặt phòng họp mới
@@ -202,6 +325,61 @@
                 </p>
                 <p>
                     Các yêu cầu đặt phòng chờ duyệt sẽ hiển thị ở đây.
+                </p>
+            </field>
+        </record>
+
+        <!-- Action: Lịch sử đặt phòng - Hôm nay -->
+        <record id="action_booking_history_today" model="ir.actions.act_window">
+            <field name="name">Đặt phòng Hôm nay</field>
+            <field name="res_model">dnu.meeting.booking</field>
+            <field name="view_mode">tree,form,calendar</field>
+            <field name="search_view_id" ref="view_dnu_meeting_booking_search"/>
+            <field name="context">{'search_default_today': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Không có lịch đặt phòng hôm nay
+                </p>
+            </field>
+        </record>
+
+        <!-- Action: Lịch sử đặt phòng - Tuần này -->
+        <record id="action_booking_history_week" model="ir.actions.act_window">
+            <field name="name">Đặt phòng Tuần này</field>
+            <field name="res_model">dnu.meeting.booking</field>
+            <field name="view_mode">tree,form,calendar</field>
+            <field name="search_view_id" ref="view_dnu_meeting_booking_search"/>
+            <field name="context">{'search_default_this_week': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Không có lịch đặt phòng tuần này
+                </p>
+            </field>
+        </record>
+
+        <!-- Action: Lịch sử đặt phòng - Tháng này -->
+        <record id="action_booking_history_month" model="ir.actions.act_window">
+            <field name="name">Đặt phòng Tháng này</field>
+            <field name="res_model">dnu.meeting.booking</field>
+            <field name="view_mode">tree,form,calendar</field>
+            <field name="search_view_id" ref="view_dnu_meeting_booking_search"/>
+            <field name="context">{'search_default_this_month': 1}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Không có lịch đặt phòng tháng này
+                </p>
+            </field>
+        </record>
+
+        <!-- Action: Tất cả lịch sử đặt phòng -->
+        <record id="action_booking_history_all" model="ir.actions.act_window">
+            <field name="name">Lịch sử Đặt phòng</field>
+            <field name="res_model">dnu.meeting.booking</field>
+            <field name="view_mode">tree,form,calendar</field>
+            <field name="search_view_id" ref="view_dnu_meeting_booking_search"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Chưa có lịch sử đặt phòng
                 </p>
             </field>
         </record>

@@ -8,35 +8,68 @@
                   sequence="10"
                   web_icon="dnu_meeting_asset,static/description/icon.png"/>
 
-        <!-- Dashboard -->
+        <!-- ============================================= -->
+        <!-- BẢNG ĐIỀU KHIỂN                              -->
+        <!-- ============================================= -->
         <menuitem id="menu_dnu_dashboard"
                   name="Bảng điều khiển"
                   parent="menu_dnu_main"
+                  action="action_asset_meeting_dashboard"
                   sequence="1"/>
 
-        <menuitem id="menu_dnu_dashboard_today"
-                  name="Đặt phòng hôm nay"
+        <!-- Submenu Thống kê -->
+        <menuitem id="menu_dashboard_statistics"
+                  name="Thống kê"
                   parent="menu_dnu_dashboard"
-                  action="action_dnu_dashboard_today_bookings"
                   sequence="1"/>
 
-        <menuitem id="menu_dnu_dashboard_week"
-                  name="Đặt phòng tuần này"
-                  parent="menu_dnu_dashboard"
-                  action="action_dnu_dashboard_week_bookings"
+        <menuitem id="menu_statistics_assets"
+                  name="Thống kê Tài sản"
+                  parent="menu_dashboard_statistics"
+                  action="action_asset_statistics"
+                  sequence="1"/>
+
+        <menuitem id="menu_statistics_bookings"
+                  name="Thống kê Đặt phòng"
+                  parent="menu_dashboard_statistics"
+                  action="action_booking_statistics"
                   sequence="2"/>
 
-        <menuitem id="menu_dnu_dashboard_month"
-                  name="Đặt phòng tháng này"
-                  parent="menu_dnu_dashboard"
-                  action="action_dnu_dashboard_month_bookings"
+        <menuitem id="menu_statistics_maintenance"
+                  name="Thống kê Bảo trì"
+                  parent="menu_dashboard_statistics"
+                  action="action_maintenance_statistics"
                   sequence="3"/>
 
-        <menuitem id="menu_dnu_dashboard_pending"
-                  name="Chờ duyệt"
+        <menuitem id="menu_statistics_lending"
+                  name="Thống kê Mượn trả"
+                  parent="menu_dashboard_statistics"
+                  action="action_lending_statistics"
+                  sequence="4"/>
+
+        <!-- Submenu Truy cập nhanh -->
+        <menuitem id="menu_dashboard_quick_access"
+                  name="Truy cập nhanh"
                   parent="menu_dnu_dashboard"
-                  action="action_dnu_dashboard_pending_approval"
-                  sequence="4"
+                  sequence="2"/>
+
+        <menuitem id="menu_dashboard_bookings_today"
+                  name="Đặt phòng Hôm nay"
+                  parent="menu_dashboard_quick_access"
+                  action="action_dashboard_bookings_today"
+                  sequence="1"/>
+
+        <menuitem id="menu_dashboard_maintenance"
+                  name="Bảo trì Chờ xử lý"
+                  parent="menu_dashboard_quick_access"
+                  action="action_dashboard_maintenance_pending"
+                  sequence="2"/>
+
+        <menuitem id="menu_dashboard_bookings_pending"
+                  name="Đặt phòng Chờ duyệt"
+                  parent="menu_dashboard_quick_access"
+                  action="action_dashboard_bookings_pending"
+                  sequence="3"
                   groups="group_facility_staff"/>
 
         <!-- Quick Actions -->
@@ -45,6 +78,13 @@
                   parent="menu_dnu_main"
                   action="action_quick_booking_wizard"
                   sequence="2"/>
+
+        <!-- User Guide -->
+        <menuitem id="menu_dnu_user_guide"
+              name="Hướng dẫn sử dụng"
+              parent="menu_dnu_dashboard"
+              action="action_dnu_user_guide"
+              sequence="9"/>
 
         <!-- Asset Management -->
         <menuitem id="menu_dnu_asset"
@@ -112,11 +152,47 @@
                   action="action_asset_disposal"
                   sequence="80"/>
 
-        <menuitem id="menu_dnu_asset_dashboard"
-                  name="Dashboard Tài sản"
+        <menuitem id="menu_dnu_asset_disposal_rule"
+              name="Quy tắc giá thanh lý"
+              parent="menu_dnu_asset"
+              action="action_asset_disposal_rule"
+              sequence="85"
+              groups="group_asset_manager"/>
+
+        <!-- Automation Alerts Menu -->
+        <menuitem id="menu_dnu_asset_automation"
+                  name="Cảnh báo &amp; Tự động"
                   parent="menu_dnu_asset"
-                  action="action_asset_dashboard"
-                  sequence="5"/>
+                  sequence="90"
+                  active="False"/>
+
+        <menuitem id="menu_dnu_overdue_lending"
+                  name="Phiếu mượn quá hạn"
+                  parent="menu_dnu_asset_automation"
+                  action="action_overdue_lendings_dashboard"
+                  sequence="10"
+                  active="False"/>
+
+        <menuitem id="menu_dnu_warranty_expiring"
+                  name="Sắp hết bảo hành"
+                  parent="menu_dnu_asset_automation"
+                  action="action_assets_warranty_expiring"
+                  sequence="20"
+                  active="False"/>
+
+        <menuitem id="menu_dnu_missing_assets"
+                  name="Tài sản mất"
+                  parent="menu_dnu_asset_automation"
+                  action="action_missing_assets"
+                  sequence="30"
+                  active="False"/>
+
+        <menuitem id="menu_dnu_pending_returns"
+                  name="Chờ thu hồi (Offboarding)"
+                  parent="menu_dnu_asset_automation"
+                  action="action_pending_asset_returns"
+                  sequence="40"
+                  active="False"/>
 
         <!-- Meeting Management -->
         <menuitem id="menu_dnu_meeting"
@@ -140,6 +216,36 @@
                   parent="menu_dnu_meeting"
                   action="action_dnu_meeting_room"
                   sequence="20"/>
+
+        <!-- Booking History Sub-menu -->
+        <menuitem id="menu_dnu_meeting_history"
+                  name="Lịch sử đặt phòng"
+                  parent="menu_dnu_meeting"
+                  sequence="25"/>
+
+        <menuitem id="menu_booking_history_today"
+                  name="Hôm nay"
+                  parent="menu_dnu_meeting_history"
+                  action="action_booking_history_today"
+                  sequence="10"/>
+
+        <menuitem id="menu_booking_history_week"
+                  name="Tuần này"
+                  parent="menu_dnu_meeting_history"
+                  action="action_booking_history_week"
+                  sequence="20"/>
+
+        <menuitem id="menu_booking_history_month"
+                  name="Tháng này"
+                  parent="menu_dnu_meeting_history"
+                  action="action_booking_history_month"
+                  sequence="30"/>
+
+        <menuitem id="menu_booking_history_all"
+                  name="Tất cả"
+                  parent="menu_dnu_meeting_history"
+                  action="action_booking_history_all"
+                  sequence="40"/>
 
         <!-- Reports -->
         <menuitem id="menu_dnu_reports"
@@ -165,6 +271,51 @@
                   parent="menu_dnu_main"
                   sequence="100"
                   groups="group_facility_staff"/>
+
+        <!-- Zoom Configuration -->
+        <menuitem id="menu_zoom_integration"
+                  name="Tích hợp Zoom"
+                  parent="menu_dnu_config"
+                  action="action_zoom_integration"
+                  sequence="10"/>
+
+        <!-- Google Calendar Configuration -->
+        <menuitem id="menu_google_calendar_integration"
+                  name="Tích hợp Google Calendar"
+                  parent="menu_dnu_config"
+                  action="action_google_calendar_integration"
+                  sequence="20"/>
+
+        <!-- OpenAI Configuration -->
+        <menuitem id="menu_openai_configuration"
+                  name="🤖 Cấu hình OpenAI"
+                  parent="menu_dnu_config"
+                  action="action_openai_configuration"
+                  sequence="30"/>
+        
+        <!-- AI Tools Menu -->
+        <menuitem id="menu_dnu_ai"
+                  name="🤖 Trợ lý AI"
+                  parent="menu_dnu_main"
+                  sequence="3"/>
+
+        <menuitem id="menu_ai_asset_wizard"
+                  name="AI Tài sản"
+                  parent="menu_dnu_ai"
+                  action="action_ai_asset_wizard"
+                  sequence="10"/>
+
+        <menuitem id="menu_ai_meeting_wizard"
+                  name="AI Phòng họp"
+                  parent="menu_dnu_ai"
+                  action="action_ai_meeting_wizard"
+                  sequence="20"/>
+
+        <menuitem id="menu_ai_hr_wizard"
+                  name="AI Nhân sự"
+                  parent="menu_dnu_ai"
+                  action="action_ai_hr_wizard"
+                  sequence="30"/>
 
     </data>
 </odoo>

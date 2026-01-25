@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Community Page Template -->
+    <template id="event_community_page" name="Event Community">
+        <t t-call="website.layout">
+            <t t-set="additional_title" t-value="event.name"/>
+            <div id="wrap" class="o_wevent_community">
+                <!-- Header -->
+                <section class="bg-light py-3">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <ol class="breadcrumb mb-0">
+                                    <li class="breadcrumb-item"><a href="/event">Sự Kiện</a></li>
+                                    <li class="breadcrumb-item"><a t-att-href="'/event/%s' % event.id" t-esc="event.name"/></li>
+                                    <li class="breadcrumb-item active">Cộng Đồng</li>
+                                </ol>
+                                <h1 class="mt-3">
+                                    <i class="fa fa-comments"/> Cộng Đồng - <t t-esc="event.name"/>
+                                </h1>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Filters and Actions -->
+                <section class="py-3 bg-white border-bottom">
+                    <div class="container">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <!-- Language Filter -->
+                                <div class="btn-group" role="group">
+                                    <a t-att-href="'/event/%s/community' % event.id" 
+                                       t-attf-class="btn btn-sm btn-{{'' if not selected_lang else 'outline-'}}primary">
+                                        Tất Cả Ngôn Ngữ
+                                    </a>
+                                    <t t-foreach="languages" t-as="lang">
+                                        <a t-att-href="'/event/%s/community?lang=%s' % (event.id, lang.code)" 
+                                           t-attf-class="btn btn-sm btn-{{'' if selected_lang and selected_lang.id == lang.id else 'outline-'}}primary">
+                                            <t t-esc="lang.name"/>
+                                        </a>
+                                    </t>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <!-- Create Room Button -->
+                                <button t-if="can_create_room" 
+                                        type="button" 
+                                        class="btn btn-primary" 
+                                        data-toggle="modal" 
+                                        data-target="#createRoomModal">
+                                    <i class="fa fa-plus"/> Tạo Phòng
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Meeting Rooms List -->
+                <section class="py-5">
+                    <div class="container">
+                        <t t-if="not rooms">
+                            <div class="alert alert-info text-center">
+                                <i class="fa fa-info-circle"/> Chưa có phòng họp nào.
+                                <t t-if="can_create_room">
+                                    <br/>Hãy là người đầu tiên tạo phòng!
+                                </t>
+                            </div>
+                        </t>
+                        
+                        <div class="row">
+                            <t t-foreach="rooms" t-as="room">
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="card-body">
+                                            <!-- Badges -->
+                                            <div class="mb-2">
+                                                <span t-if="room.is_pinned" class="badge badge-info">
+                                                    <i class="fa fa-thumb-tack"/> Đã Ghim
+                                                </span>
+                                                <span t-if="room.is_full" class="badge badge-warning">
+                                                    <i class="fa fa-users"/> Đầy
+                                                </span>
+                                                <span t-if="room.is_closed" class="badge badge-danger">
+                                                    Đã Đóng
+                                                </span>
+                                            </div>
+                                            
+                                            <!-- Room Info -->
+                                            <h5 class="card-title">
+                                                <a t-att-href="'/event/%s/room/%s' % (event.id, room.room_token)" 
+                                                   t-esc="room.name"/>
+                                            </h5>
+                                            
+                                            <p class="card-text text-muted" t-if="room.summary">
+                                                <t t-esc="room.summary[:120]"/>
+                                                <t t-if="len(room.summary) > 120">...</t>
+                                            </p>
+                                            
+                                            <div class="small text-muted mb-2">
+                                                <i class="fa fa-user"/> <t t-esc="room.creator_name"/>
+                                            </div>
+                                            
+                                            <div class="small mb-2" t-if="room.language_id">
+                                                <i class="fa fa-language"/> <t t-esc="room.language_id.name"/>
+                                            </div>
+                                            
+                                            <div class="small mb-2" t-if="room.target_audience != 'all'">
+                                                <i class="fa fa-bullseye"/> 
+                                                <t t-esc="dict(room._fields['target_audience'].selection)[room.target_audience]"/>
+                                            </div>
+                                            
+                                            <div class="progress mb-2" style="height: 20px;">
+                                                <div class="progress-bar" 
+                                                     role="progressbar" 
+                                                     t-att-style="'width: %s%%' % (room.current_participants * 100 / room.max_capacity if room.max_capacity else 0)"
+                                                     t-att-aria-valuenow="room.current_participants"
+                                                     aria-valuemin="0" 
+                                                     t-att-aria-valuemax="room.max_capacity">
+                                                    <t t-esc="room.current_participants"/> / <t t-esc="room.max_capacity"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card-footer bg-white">
+                                            <a t-att-href="'/event/%s/room/%s' % (event.id, room.room_token)" 
+                                               class="btn btn-primary btn-block"
+                                               t-att-disabled="'disabled' if room.is_closed or room.is_full else None">
+                                                <i class="fa fa-sign-in"/> Tham Gia Phòng
+                                            </a>
+                                            
+                                            <!-- Admin Actions -->
+                                            <div t-if="is_event_manager" class="btn-group btn-block mt-2" role="group">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                        t-att-data-room-id="room.id"
+                                                        onclick="togglePin(this)">
+                                                    <i class="fa fa-thumb-tack"/> <t t-if="room.is_pinned">Bỏ Ghim</t><t t-else="">Ghim</t>
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                        t-att-data-room-id="room.id"
+                                                        onclick="duplicateRoom(this)">
+                                                    <i class="fa fa-files-o"/> Sao Chép
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        t-att-data-room-id="room.id"
+                                                        onclick="closeRoom(this)">
+                                                    <i class="fa fa-times"/> Đóng
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Create Room Modal -->
+                <div t-if="can_create_room" class="modal fade" id="createRoomModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <form method="post" t-att-action="'/event/%s/room/create' % event.id">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Tạo Phòng Họp</h5>
+                                    <button type="button" class="close" data-dismiss="modal">
+                                        <span aria-hidden="true">&amp;times;</span>
+                                    </button>
+                                </div>
+                                
+                                <div class="modal-body">
+                                    <div class="form-group">
+                                        <label for="room_name">Tên Phòng/Chủ Đề *</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="room_name" 
+                                               name="name" 
+                                               required="required"
+                                               placeholder="Ví dụ: Thảo luận Python cho người mới"/>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="room_summary">Tóm Tắt</label>
+                                        <textarea class="form-control" 
+                                                  id="room_summary" 
+                                                  name="summary" 
+                                                  rows="3"
+                                                  placeholder="Mô tả ngắn về nội dung sẽ thảo luận..."></textarea>
+                                    </div>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label for="room_language">Ngôn Ngữ</label>
+                                            <select class="form-control" id="room_language" name="language">
+                                                <option value="">Bất kỳ</option>
+                                                <t t-foreach="languages" t-as="lang">
+                                                    <option t-att-value="lang.code" t-esc="lang.name"/>
+                                                </t>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="form-group col-md-6">
+                                            <label for="room_audience">Đối Tượng Mục Tiêu</label>
+                                            <select class="form-control" id="room_audience" name="target_audience">
+                                                <option value="all">Mọi người</option>
+                                                <option value="beginners">Người mới bắt đầu</option>
+                                                <option value="intermediate">Trung cấp</option>
+                                                <option value="advanced">Nâng cao</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="room_capacity">Sức Chứa Tối Đa</label>
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="room_capacity" 
+                                               name="max_capacity" 
+                                               t-att-value="event.event_type_id.default_room_capacity or 50"
+                                               min="2" 
+                                               max="200"/>
+                                    </div>
+                                </div>
+                                
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fa fa-plus"/> Tạo Phòng
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

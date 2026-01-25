@@ -176,6 +176,23 @@ class AssetMaintenance(models.Model):
         string='Lịch bảo trì định kỳ',
         help='Nếu phiếu này được tạo từ lịch bảo trì định kỳ'
     )
+
+    # Nguồn phát sinh (để liên kết các mục với nhau)
+    lending_id = fields.Many2one(
+        'dnu.asset.lending',
+        string='Phiếu mượn liên quan',
+        help='Nếu bảo trì phát sinh từ việc mượn/trả tài sản'
+    )
+    assignment_id = fields.Many2one(
+        'dnu.asset.assignment',
+        string='Phiếu gán liên quan',
+        help='Nếu bảo trì phát sinh trong quá trình gán/thu hồi'
+    )
+    handover_id = fields.Many2one(
+        'dnu.asset.handover',
+        string='Biên bản liên quan',
+        help='Biên bản bàn giao/trả tài sản liên quan đến sự cố'
+    )
     
     active = fields.Boolean(default=True)
     color = fields.Integer(string='Color Index')
@@ -191,6 +208,51 @@ class AssetMaintenance(models.Model):
         compute='_compute_duration',
         store=True
     )
+
+    van_ban_den_count = fields.Integer(
+        string='Văn bản đến',
+        compute='_compute_van_ban_den_count',
+        store=False
+    )
+
+    def _compute_van_ban_den_count(self):
+        VanBanDen = self.env['van_ban_den']
+        for rec in self:
+            rec.van_ban_den_count = VanBanDen.search_count([
+                ('source_model', '=', rec._name),
+                ('source_res_id', '=', rec.id),
+            ])
+
+    def action_view_van_ban_den(self):
+        self.ensure_one()
+        action = self.env.ref('quan_ly_van_ban.action_van_ban_den').read()[0]
+        action['domain'] = [('source_model', '=', self._name), ('source_res_id', '=', self.id)]
+        action['context'] = {
+            'default_source_model': self._name,
+            'default_source_res_id': self.id,
+        }
+        return action
+
+    def action_create_van_ban_den(self):
+        self.ensure_one()
+        handler_employee = self.nhan_vien_ky_thuat_id or self.nhan_vien_bao_cao_id
+        department = handler_employee.don_vi_chinh_id if handler_employee else False
+        due_date = fields.Date.to_string(self.date_scheduled.date()) if self.date_scheduled else False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tạo văn bản đến',
+            'res_model': 'van_ban_den',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_source_model': self._name,
+                'default_source_res_id': self.id,
+                'default_ten_van_ban': f'Văn bản đến - Bảo trì {self.name}',
+                'default_handler_employee_id': handler_employee.id if handler_employee else False,
+                'default_department_id': department.id if department else False,
+                'default_due_date': due_date,
+            },
+        }
 
     @api.model
     def create(self, vals):
@@ -254,7 +316,10 @@ class AssetMaintenance(models.Model):
             ], limit=1)
             
             if not other_maintenance:
-                maintenance.asset_id.write({'state': 'available'})
+                if maintenance.asset_id.assigned_to or maintenance.asset_id.assigned_nhan_vien_id:
+                    maintenance.asset_id.write({'state': 'assigned'})
+                else:
+                    maintenance.asset_id.write({'state': 'available'})
 
     def action_cancel(self):
         """Hủy bảo trì"""

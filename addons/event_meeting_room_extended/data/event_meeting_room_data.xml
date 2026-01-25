@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Default Languages for Meeting Rooms -->
+        <!-- Data will be automatically populated from res.lang -->
+    </data>
+</odoo>

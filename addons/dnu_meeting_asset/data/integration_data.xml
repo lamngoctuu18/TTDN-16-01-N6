@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        
+        <!-- Cấu hình tích hợp Zoom mặc định -->
+        <!-- IMPORTANT: Configure Zoom credentials via Odoo UI: Settings > Zoom Integration -->
+        <record id="zoom_integration_default" model="zoom.integration">
+            <field name="name">Zoom DNU</field>
+            <field name="account_id">YOUR_ZOOM_ACCOUNT_ID</field>
+            <field name="client_id">YOUR_ZOOM_CLIENT_ID</field>
+            <field name="client_secret">YOUR_ZOOM_CLIENT_SECRET</field>
+            <field name="is_active">False</field>
+        </record>
+
+        <!-- Cấu hình tích hợp Google Calendar mặc định -->
+        <!-- IMPORTANT: Configure Google OAuth credentials via Odoo UI: Settings > Google Calendar Integration -->
+        <record id="google_calendar_integration_default" model="google.calendar.integration">
+            <field name="name">Google Calendar DNU</field>
+            <field name="client_id">YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com</field>
+            <field name="client_secret">YOUR_GOOGLE_CLIENT_SECRET</field>
+            <field name="redirect_uri">http://localhost:8069/google_calendar/callback</field>
+            <field name="calendar_id">primary</field>
+            <field name="is_active">False</field>
+        </record>
+
+    </data>
+</odoo>

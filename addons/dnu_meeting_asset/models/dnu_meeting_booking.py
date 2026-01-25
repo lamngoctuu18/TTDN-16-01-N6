@@ -22,7 +22,8 @@ class MeetingBooking(models.Model):
     subject = fields.Char(
         string='Chủ đề cuộc họp',
         required=True,
-        tracking=True
+        tracking=True,
+        default='Cuộc họp'
     )
     room_id = fields.Many2one(
         'dnu.meeting.room',
@@ -89,14 +90,74 @@ class MeetingBooking(models.Model):
     @api.onchange('nhan_vien_to_chuc_id')
     def _onchange_nhan_vien_to_chuc(self):
         """Tự động liên kết với HR employee nếu có"""
-        if self.nhan_vien_to_chuc_id and self.nhan_vien_to_chuc_id.hr_employee_id:
-            self.organizer_id = self.nhan_vien_to_chuc_id.hr_employee_id
+        if self.nhan_vien_to_chuc_id:
+            # Tự động điền HR employee nếu có
+            if self.nhan_vien_to_chuc_id.hr_employee_id:
+                self.organizer_id = self.nhan_vien_to_chuc_id.hr_employee_id
     
     @api.onchange('organizer_id')
     def _onchange_organizer(self):
         """Tự động liên kết với nhân viên nếu có"""
         if self.organizer_id and self.organizer_id.nhan_vien_id:
             self.nhan_vien_to_chuc_id = self.organizer_id.nhan_vien_id
+    
+    @api.onchange('room_id')
+    def _onchange_room_id(self):
+        """Không tự động load thiết bị theo phòng"""
+        return
+    
+    @api.onchange('num_attendees', 'need_projector', 'need_video_conference', 'need_whiteboard')
+    def _onchange_num_attendees(self):
+        """Đề xuất phòng họp phù hợp dựa trên số người tham dự"""
+        if self.num_attendees > 0:
+            # Tìm phòng có sức chứa >= số người và gần nhất
+            domain = [
+                ('capacity', '>=', self.num_attendees),
+                ('state', '=', 'available'),
+                ('allow_booking', '=', True),
+            ]
+            if self.need_projector:
+                domain.append(('has_projector', '=', True))
+            if self.need_video_conference:
+                domain.append(('has_video_conference', '=', True))
+            if self.need_whiteboard:
+                domain.append(('has_whiteboard', '=', True))
+
+            suitable_rooms = self.env['dnu.meeting.room'].search(domain, order='capacity asc', limit=5)
+            
+            if suitable_rooms:
+                return {
+                    'domain': {'room_id': [('id', 'in', suitable_rooms.ids)]}
+                }
+            else:
+                return {
+                    'warning': {
+                        'title': 'Không tìm thấy phòng phù hợp',
+                        'message': f'Không có phòng nào có sức chứa >= {self.num_attendees} người. Vui lòng giảm số lượng hoặc liên hệ quản lý.'
+                    }
+                }
+    
+    @api.depends('num_attendees', 'need_projector', 'need_video_conference', 'need_whiteboard')
+    def _compute_suggested_rooms(self):
+        """Tính toán danh sách phòng đề xuất"""
+        for record in self:
+            if record.num_attendees > 0:
+                domain = [
+                    ('capacity', '>=', record.num_attendees),
+                    ('state', '=', 'available'),
+                    ('allow_booking', '=', True),
+                ]
+                if record.need_projector:
+                    domain.append(('has_projector', '=', True))
+                if record.need_video_conference:
+                    domain.append(('has_video_conference', '=', True))
+                if record.need_whiteboard:
+                    domain.append(('has_whiteboard', '=', True))
+
+                suitable_rooms = self.env['dnu.meeting.room'].search(domain, order='capacity asc', limit=5)
+                record.suggested_room_ids = suitable_rooms
+            else:
+                record.suggested_room_ids = False
     
     attendee_ids = fields.Many2many(
         'hr.employee',
@@ -106,10 +167,23 @@ class MeetingBooking(models.Model):
         string='Người tham dự'
     )
     num_attendees = fields.Integer(
-        string='Số người dự kiến',
-        compute='_compute_num_attendees',
-        store=True,
-        help='Tổng số người tham dự (bao gồm người tổ chức)'
+        string='Số người tham dự',
+        default=1,
+        required=True,
+        help='Tổng số người tham dự cuộc họp (bao gồm cả người tổ chức). Hệ thống sẽ tự động đề xuất phòng phù hợp.'
+    )
+    need_projector = fields.Boolean(string='Cần máy chiếu')
+    need_video_conference = fields.Boolean(string='Cần hệ thống họp trực tuyến')
+    need_whiteboard = fields.Boolean(string='Cần bảng trắng')
+    suggested_room_ids = fields.Many2many(
+        'dnu.meeting.room',
+        'booking_suggested_room_rel',
+        'booking_id',
+        'room_id',
+        string='Phòng đề xuất',
+        compute='_compute_suggested_rooms',
+        store=False,
+        help='Danh sách phòng phù hợp với số người tham dự'
     )
     external_attendees = fields.Integer(
         string='Khách bên ngoài',
@@ -122,9 +196,34 @@ class MeetingBooking(models.Model):
         'booking_equipment_rel',
         'booking_id',
         'asset_id',
-        string='Thiết bị yêu cầu',
-        domain=[('state', 'in', ['available', 'assigned'])]
+        string='Bổ sung trang thiết bị',
+        domain=[('state', 'in', ['available', 'assigned'])],
+        help='Tài sản sẵn sàng hoặc đã gán có thể mượn. Tài sản đang được mượn sẽ bị chặn khi tạo phiếu.'
     )
+
+    @api.onchange('start_datetime', 'end_datetime')
+    def _onchange_booking_time_equipment_domain(self):
+        """Chặn thiết bị đang được mượn trong khoảng thời gian đặt phòng"""
+        domain = [('state', 'in', ['available', 'assigned'])]
+
+        if self.start_datetime and self.end_datetime:
+            active_lendings = self.env['dnu.asset.lending'].search([
+                ('state', 'in', ['approved', 'borrowed']),
+                ('date_borrow', '<', self.end_datetime),
+                ('date_expected_return', '>', self.start_datetime),
+            ])
+            if active_lendings:
+                domain.append(('id', 'not in', active_lendings.mapped('asset_id').ids))
+        else:
+            now = fields.Datetime.now()
+            active_lendings = self.env['dnu.asset.lending'].search([
+                ('state', 'in', ['approved', 'borrowed']),
+                ('date_expected_return', '>=', now),
+            ])
+            if active_lendings:
+                domain.append(('id', 'not in', active_lendings.mapped('asset_id').ids))
+
+        return {'domain': {'required_equipment_ids': domain}}
     
     # Status
     state = fields.Selection([
@@ -155,6 +254,94 @@ class MeetingBooking(models.Model):
     description = fields.Html(string='Mô tả cuộc họp')
     notes = fields.Text(string='Ghi chú')
     cancellation_reason = fields.Text(string='Lý do hủy')
+
+    van_ban_den_count = fields.Integer(
+        string='Văn bản đến',
+        compute='_compute_van_ban_den_count',
+        store=False
+    )
+
+    def _compute_van_ban_den_count(self):
+        VanBanDen = self.env['van_ban_den']
+        for rec in self:
+            rec.van_ban_den_count = VanBanDen.search_count([
+                ('source_model', '=', rec._name),
+                ('source_res_id', '=', rec.id),
+            ])
+
+    def action_view_van_ban_den(self):
+        self.ensure_one()
+        action = self.env.ref('quan_ly_van_ban.action_van_ban_den').read()[0]
+        action['domain'] = [('source_model', '=', self._name), ('source_res_id', '=', self.id)]
+        action['context'] = {
+            'default_source_model': self._name,
+            'default_source_res_id': self.id,
+        }
+        return action
+
+    def action_create_van_ban_den(self):
+        self.ensure_one()
+        handler_employee = self.nhan_vien_to_chuc_id or (self.organizer_id.nhan_vien_id if self.organizer_id and hasattr(self.organizer_id, 'nhan_vien_id') else False)
+        department = handler_employee.don_vi_chinh_id if handler_employee else False
+        due_date = fields.Date.to_string(self.start_datetime.date()) if self.start_datetime else False
+        ten_van_ban = f'Văn bản đến - Đặt phòng {self.name}'
+        if self.subject:
+            ten_van_ban = f'Văn bản đến - {self.subject} ({self.name})'
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tạo văn bản đến',
+            'res_model': 'van_ban_den',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_source_model': self._name,
+                'default_source_res_id': self.id,
+                'default_ten_van_ban': ten_van_ban,
+                'default_handler_employee_id': handler_employee.id if handler_employee else False,
+                'default_department_id': department.id if department else False,
+                'default_due_date': due_date,
+            },
+        }
+    
+    # Meeting type (Online/Offline)
+    meeting_type = fields.Selection([
+        ('offline', 'Trực tiếp (Offline)'),
+        ('online', 'Trực tuyến (Zoom)'),
+    ], string='Hình thức họp', default='offline', required=True, tracking=True)
+    
+    # Zoom integration fields
+    zoom_meeting_id = fields.Char(string='Zoom Meeting ID', readonly=True, copy=False)
+    zoom_join_url = fields.Char(string='Link tham gia Zoom', readonly=True, copy=False)
+    zoom_start_url = fields.Char(string='Link bắt đầu Zoom (Host)', readonly=True, copy=False)
+    zoom_password = fields.Char(string='Mật khẩu Zoom', readonly=True, copy=False)
+    
+    # Google Calendar integration fields
+    google_calendar_event_id = fields.Char(string='Google Calendar Event ID', readonly=True, copy=False)
+    google_calendar_link = fields.Char(string='Link Google Calendar', readonly=True, copy=False)
+    
+    # Integration status
+    zoom_sync_status = fields.Selection([
+        ('not_synced', 'Chưa đồng bộ'),
+        ('synced', 'Đã đồng bộ'),
+        ('error', 'Lỗi'),
+    ], string='Trạng thái Zoom', default='not_synced', readonly=True)
+    google_sync_status = fields.Selection([
+        ('not_synced', 'Chưa đồng bộ'),
+        ('synced', 'Đã đồng bộ'),
+        ('error', 'Lỗi'),
+    ], string='Trạng thái Google Calendar', default='not_synced', readonly=True)
+    
+    # Email tracking - TEMPORARILY DISABLED until DB upgrade
+    # reminder_email_sent = fields.Boolean(
+    #     string='Email nhắc đã gửi',
+    #     default=False,
+    #     help='Đánh dấu email nhắc lịch họp đã được gửi'
+    # )
+    # confirmation_email_sent = fields.Boolean(
+    #     string='Email xác nhận đã gửi',
+    #     default=False,
+    #     help='Đánh dấu email xác nhận đã được gửi'
+    # )
     
     # Calendar integration
     calendar_event_id = fields.Many2one(
@@ -182,6 +369,29 @@ class MeetingBooking(models.Model):
         string='Có xung đột'
     )
     
+    # Lending records
+    lending_ids = fields.One2many(
+        'dnu.asset.lending',
+        'booking_id',
+        string='Phiếu mượn tài sản',
+        help='Các phiếu mượn tài sản tự động được tạo từ booking này'
+    )
+    lending_count = fields.Integer(
+        string='Số phiếu mượn',
+        compute='_compute_lending_count',
+        store=True
+    )
+    all_lendings_approved = fields.Boolean(
+        string='Tất cả đã được duyệt',
+        compute='_compute_lending_status',
+        help='Tất cả phiếu mượn đã được ký duyệt'
+    )
+    has_pending_lendings = fields.Boolean(
+        string='Có phiếu chờ duyệt',
+        compute='_compute_lending_status',
+        help='Có phiếu mượn đang chờ ký duyệt'
+    )
+    
     active = fields.Boolean(default=True)
     color = fields.Integer(string='Color Index')
     company_id = fields.Many2one(
@@ -196,6 +406,11 @@ class MeetingBooking(models.Model):
             vals['name'] = self.env['ir.sequence'].next_by_code('dnu.meeting.booking') or _('New')
         
         booking = super(MeetingBooking, self).create(vals)
+
+        # If created from calendar (or other UI) with auto-submit flag, push to 'submitted'
+        # so it appears immediately in the approval list.
+        if self.env.context.get('auto_submit_on_create') and booking.state == 'draft':
+            booking.action_submit()
         
         # Tự động tạo calendar event nếu cần
         if booking.state == 'confirmed':
@@ -204,6 +419,19 @@ class MeetingBooking(models.Model):
         return booking
 
     def write(self, vals):
+        # Lưu giá trị cũ để so sánh
+        old_values = {}
+        important_fields = ['start_datetime', 'end_datetime', 'subject', 'room_id', 'zoom_join_url', 'google_calendar_link']
+        
+        for booking in self:
+            if booking.state == 'confirmed' and any(key in vals for key in important_fields):
+                old_values[booking.id] = {
+                    'start_datetime': booking.start_datetime,
+                    'end_datetime': booking.end_datetime,
+                    'subject': booking.subject,
+                    'room_id': booking.room_id.name,
+                }
+        
         result = super(MeetingBooking, self).write(vals)
         
         # Cập nhật calendar event
@@ -211,6 +439,12 @@ class MeetingBooking(models.Model):
             for booking in self:
                 if booking.calendar_event_id:
                     booking._update_calendar_event()
+        
+        # Gửi email thông báo nếu có thay đổi quan trọng
+        if old_values and any(key in vals for key in important_fields):
+            for booking in self:
+                if booking.id in old_values:
+                    booking._send_update_notification_email()
         
         return result
 
@@ -222,15 +456,6 @@ class MeetingBooking(models.Model):
                 booking.duration = delta.total_seconds() / 3600.0
             else:
                 booking.duration = 0.0
-
-    @api.depends('attendee_ids', 'organizer_id')
-    def _compute_num_attendees(self):
-        for booking in self:
-            attendees = len(booking.attendee_ids)
-            # Thêm người tổ chức nếu chưa có trong danh sách
-            if booking.organizer_id and booking.organizer_id not in booking.attendee_ids:
-                attendees += 1
-            booking.num_attendees = attendees + booking.external_attendees
 
     @api.depends('end_datetime')
     def _compute_is_past(self):
@@ -250,6 +475,30 @@ class MeetingBooking(models.Model):
                 (booking.start_datetime - timedelta(minutes=15)) <= now <= booking.end_datetime
             )
             booking.can_checkin = can_checkin
+    
+    @api.depends('lending_ids')
+    def _compute_lending_count(self):
+        for booking in self:
+            booking.lending_count = len(booking.lending_ids)
+    
+    @api.depends('lending_ids', 'lending_ids.state', 'lending_ids.approval_status')
+    def _compute_lending_status(self):
+        for booking in self:
+            if not booking.lending_ids:
+                booking.all_lendings_approved = True
+                booking.has_pending_lendings = False
+            else:
+                # Kiểm tra có phiếu nào chưa được phê duyệt
+                pending_lendings = booking.lending_ids.filtered(
+                    lambda l: l.state == 'pending_approval' or l.approval_status == 'pending'
+                )
+                booking.has_pending_lendings = bool(pending_lendings)
+                
+                # Kiểm tra tất cả đã được phê duyệt chưa
+                approved_lendings = booking.lending_ids.filtered(
+                    lambda l: l.approval_status == 'approved' or l.state in ['approved', 'borrowed', 'returned']
+                )
+                booking.all_lendings_approved = (len(approved_lendings) == len(booking.lending_ids))
 
     @api.depends('room_id', 'start_datetime', 'end_datetime', 'state')
     def _compute_conflicts(self):
@@ -260,6 +509,12 @@ class MeetingBooking(models.Model):
                 continue
             
             if booking.state == 'cancelled':
+                booking.conflict_ids = False
+                booking.has_conflicts = False
+                continue
+            
+            # Skip conflict check for new records (not yet saved)
+            if not booking.id or isinstance(booking.id, models.NewId):
                 booking.conflict_ids = False
                 booking.has_conflicts = False
                 continue
@@ -336,7 +591,7 @@ class MeetingBooking(models.Model):
             booking.message_post(body=_('Yêu cầu đặt phòng đã được gửi'))
 
     def action_confirm(self):
-        """Xác nhận đặt phòng"""
+        """Xác nhận đặt phòng và tạo phiếu mượn tài sản tự động"""
         for booking in self:
             # Kiểm tra lại xung đột
             available, conflicts = booking.room_id.check_availability(
@@ -350,7 +605,24 @@ class MeetingBooking(models.Model):
             
             booking.write({'state': 'confirmed'})
             booking._create_calendar_event()
+            
+            # Tạo phiếu mượn tài sản tự động cho các thiết bị được chọn
+            if booking.required_equipment_ids:
+                booking._create_auto_lending_records()
+            
+            # Tích hợp Zoom nếu là họp online
+            if booking.meeting_type == 'online':
+                booking._create_zoom_meeting()
+            
+            # Tích hợp Google Calendar
+            booking._create_google_calendar_event()
+            
+            # Gửi email xác nhận
             booking._send_confirmation_email()
+            
+            # Gửi email thông báo cho tất cả người tham dự
+            booking._send_notification_emails()
+            
             booking.message_post(body=_('Đặt phòng đã được xác nhận'))
         
         # Thông báo và chuyển về calendar
@@ -359,7 +631,7 @@ class MeetingBooking(models.Model):
             'tag': 'display_notification',
             'params': {
                 'title': _('Thành công'),
-                'message': _('Đã duyệt %s lịch đặt phòng. Xem trong lịch bằng cách bỏ filter hoặc chuyển đến ngày đặt.') % len(self),
+                'message': _('Đã duyệt %s lịch đặt phòng. Email thông báo đã được gửi đến người tổ chức và người tham dự.') % len(self),
                 'type': 'success',
                 'sticky': False,
             }
@@ -374,6 +646,14 @@ class MeetingBooking(models.Model):
             # Xóa calendar event
             if booking.calendar_event_id:
                 booking.calendar_event_id.unlink()
+            
+            # Xóa Zoom meeting
+            if booking.zoom_meeting_id:
+                booking._delete_zoom_meeting()
+            
+            # Xóa Google Calendar event
+            if booking.google_calendar_event_id:
+                booking._delete_google_calendar_event()
             
             booking._send_cancellation_email()
             if old_state == 'submitted':
@@ -465,6 +745,122 @@ class MeetingBooking(models.Model):
             })
             
             booking.calendar_event_id = event.id
+    
+    def _create_auto_lending_records(self):
+        """Tạo phiếu mượn tự động cho các thiết bị trong booking"""
+        self.ensure_one()
+        
+        if not self.required_equipment_ids:
+            return
+        
+        # Xác định người mượn (ưu tiên nhan_vien, fallback sang HR employee)
+        nhan_vien_muon = self.nhan_vien_to_chuc_id
+        borrower = self.organizer_id
+        
+        if not borrower and not nhan_vien_muon:
+            raise UserError(_('Không xác định được người tổ chức để tạo phiếu mượn!'))
+        
+        # Nếu chỉ có nhan_vien mà không có HR employee, tìm HR employee tương ứng
+        if nhan_vien_muon and not borrower:
+            borrower = nhan_vien_muon.hr_employee_id
+            if not borrower:
+                raise UserError(_('Người tổ chức "%s" chưa có liên kết với hệ thống HR!') % nhan_vien_muon.ho_va_ten)
+        
+        # Tạo phiếu mượn cho từng thiết bị
+        created_lendings = self.env['dnu.asset.lending']
+        skipped_equipments = []
+        
+        for equipment in self.required_equipment_ids:
+            # Kiểm tra xem đã tạo phiếu mượn chưa
+            existing_lending = self.env['dnu.asset.lending'].search([
+                ('booking_id', '=', self.id),
+                ('asset_id', '=', equipment.id),
+                ('state', 'not in', ['cancelled', 'returned'])
+            ], limit=1)
+            
+            if existing_lending:
+                continue  # Đã tồn tại phiếu mượn
+            
+            # Kiểm tra xem tài sản có đang được mượn không
+            conflicting_lending = self.env['dnu.asset.lending'].search([
+                ('asset_id', '=', equipment.id),
+                ('state', 'in', ['approved', 'borrowed']),
+                ('date_borrow', '<', self.end_datetime),
+                ('date_expected_return', '>', self.start_datetime),
+            ], limit=1)
+            
+            if conflicting_lending:
+                # Tài sản đang được mượn, bỏ qua
+                skipped_equipments.append({
+                    'name': equipment.name,
+                    'borrower': conflicting_lending.borrower_name,
+                    'return_date': conflicting_lending.date_expected_return
+                })
+                continue
+            
+            # Tạo phiếu mượn mới - điền cả borrower_id và nhan_vien_muon_id
+            lending_vals = {
+                'asset_id': equipment.id,
+                'borrower_id': borrower.id if borrower else False,
+                'nhan_vien_muon_id': nhan_vien_muon.id if nhan_vien_muon else False,
+                'date_borrow': self.start_datetime,
+                'date_expected_return': self.end_datetime,
+                'purpose': 'meeting',
+                'purpose_note': 'Mượn tài sản cho cuộc họp: %s\n%s' % (
+                    self.subject,
+                    self.description or ''
+                ),
+                'booking_id': self.id,
+                'location': self.room_id.name,
+                'state': 'draft',
+                'is_auto_created': True,
+                'require_approval': equipment.state == 'assigned',  # Chỉ yêu cầu phê duyệt nếu đã gán
+            }
+            
+            lending = self.env['dnu.asset.lending'].create(lending_vals)
+            created_lendings |= lending
+            
+            # Tự động gửi yêu cầu mượn và tạo biên bản
+            try:
+                lending.action_request()
+            except Exception as e:
+                # Log lỗi nhưng không block booking
+                self.message_post(
+                    body=_('Lỗi khi tạo yêu cầu mượn cho tài sản "%s": %s') % (equipment.name, str(e))
+                )
+        
+        # Thông báo về tài sản bị bỏ qua
+        if skipped_equipments:
+            skip_msg = _('<b>Cảnh báo:</b> Các tài sản sau đang được mượn và không thể tạo phiếu:<br/><ul>')
+            for skip in skipped_equipments:
+                skip_msg += _('<li><b>%s</b> - Đang mượn bởi <i>%s</i> đến %s</li>') % (
+                    skip['name'],
+                    skip['borrower'],
+                    skip['return_date'].strftime('%d/%m/%Y %H:%M') if skip['return_date'] else ''
+                )
+            skip_msg += '</ul>'
+            self.message_post(body=skip_msg, subtype_xmlid='mail.mt_warning')
+        
+        # Thông báo số phiếu mượn đã tạo
+        if created_lendings:
+            self.message_post(
+                body=_('Đã tạo %d phiếu mượn tài sản tự động. Vui lòng chờ người quản lý tài sản ký duyệt biên bản bàn giao.') % 
+                len(created_lendings),
+                subtype_xmlid='mail.mt_note'
+            )
+            
+            # Tạo activity nhắc nhở người tổ chức
+            if borrower.user_id:
+                self.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    user_id=borrower.user_id.id,
+                    summary=_('Chờ phê duyệt mượn tài sản'),
+                    note=_('Đã tạo %d phiếu mượn tài sản cho cuộc họp "%s". '
+                           'Vui lòng chờ người quản lý tài sản ký duyệt biên bản bàn giao. '
+                           'Bạn có thể xem trạng thái tại tab Mượn tài sản.') % (
+                        len(created_lendings), self.subject
+                    )
+                )
 
     def _update_calendar_event(self):
         """Cập nhật sự kiện lịch"""
@@ -521,3 +917,433 @@ class MeetingBooking(models.Model):
         if template:
             for booking in bookings:
                 template.send_mail(booking.id, force_send=True)
+
+    # ==================== ZOOM INTEGRATION ====================
+    
+    def _create_zoom_meeting(self):
+        """Tạo cuộc họp Zoom"""
+        self.ensure_one()
+        
+        try:
+            zoom = self.env['zoom.integration'].get_active_integration()
+        except UserError:
+            # Không có cấu hình Zoom, bỏ qua
+            return
+        
+        duration_minutes = int(self.duration * 60)
+        description = self.description or self.subject
+        
+        result = zoom.create_meeting(
+            topic=f"{self.name} - {self.subject}",
+            start_time=self.start_datetime,
+            duration_minutes=duration_minutes,
+            description=description,
+        )
+        
+        if result.get('success'):
+            self.write({
+                'zoom_meeting_id': str(result.get('meeting_id')),
+                'zoom_join_url': result.get('join_url'),
+                'zoom_start_url': result.get('start_url'),
+                'zoom_password': result.get('password'),
+                'zoom_sync_status': 'synced',
+            })
+            self.message_post(body=_(
+                '✅ Đã tạo Zoom meeting thành công!\n'
+                '🔗 Link tham gia: %s\n'
+                '🔑 Meeting ID: %s'
+            ) % (result.get('join_url'), result.get('meeting_id')))
+        else:
+            self.write({'zoom_sync_status': 'error'})
+            self.message_post(body=_('❌ Lỗi khi tạo Zoom meeting: %s') % result.get('error'))
+    
+    def _update_zoom_meeting(self):
+        """Cập nhật cuộc họp Zoom"""
+        self.ensure_one()
+        
+        if not self.zoom_meeting_id:
+            return
+        
+        try:
+            zoom = self.env['zoom.integration'].get_active_integration()
+        except UserError:
+            return
+        
+        duration_minutes = int(self.duration * 60)
+        
+        result = zoom.update_meeting(
+            meeting_id=self.zoom_meeting_id,
+            topic=f"{self.name} - {self.subject}",
+            start_time=self.start_datetime,
+            duration_minutes=duration_minutes,
+        )
+        
+        if result.get('success'):
+            self.message_post(body=_('✅ Đã cập nhật Zoom meeting'))
+        else:
+            self.message_post(body=_('❌ Lỗi khi cập nhật Zoom meeting: %s') % result.get('error'))
+    
+    def _delete_zoom_meeting(self):
+        """Xóa cuộc họp Zoom"""
+        self.ensure_one()
+        
+        if not self.zoom_meeting_id:
+            return
+        
+        try:
+            zoom = self.env['zoom.integration'].get_active_integration()
+            result = zoom.delete_meeting(self.zoom_meeting_id)
+            
+            if result.get('success'):
+                self.write({
+                    'zoom_meeting_id': False,
+                    'zoom_join_url': False,
+                    'zoom_start_url': False,
+                    'zoom_password': False,
+                    'zoom_sync_status': 'not_synced',
+                })
+                self.message_post(body=_('✅ Đã xóa Zoom meeting'))
+        except UserError:
+            pass
+    
+    def action_create_zoom_meeting(self):
+        """Button để tạo Zoom meeting thủ công"""
+        self.ensure_one()
+        if self.meeting_type != 'online':
+            raise UserError(_('Chỉ có thể tạo Zoom meeting cho cuộc họp trực tuyến!'))
+        if self.zoom_meeting_id:
+            raise UserError(_('Đã có Zoom meeting cho cuộc họp này!'))
+        self._create_zoom_meeting()
+    
+    def action_open_zoom_meeting(self):
+        """Mở link Zoom meeting"""
+        self.ensure_one()
+        if not self.zoom_join_url:
+            raise UserError(_('Chưa có link Zoom meeting!'))
+        return {
+            'type': 'ir.actions.act_url',
+            'url': self.zoom_join_url,
+            'target': 'new',
+        }
+    
+    def action_view_room_bookings(self):
+        """Xem tất cả lịch đặt của phòng này"""
+        self.ensure_one()
+        return {
+            'name': _('Lịch đặt phòng - %s') % self.room_id.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'dnu.meeting.booking',
+            'view_mode': 'calendar,tree,form',
+            'domain': [('room_id', '=', self.room_id.id)],
+            'context': {
+                'default_room_id': self.room_id.id,
+                'search_default_confirmed': 1,
+            },
+        }
+    
+    # ==================== GOOGLE CALENDAR INTEGRATION ====================
+    
+    def _get_attendee_emails(self):
+        """Lấy danh sách email người tham dự"""
+        emails = []
+        for attendee in self.attendee_ids:
+            if attendee.work_email:
+                emails.append(attendee.work_email)
+            elif attendee.user_id and attendee.user_id.email:
+                emails.append(attendee.user_id.email)
+        
+        # Thêm email người tổ chức
+        if self.organizer_id:
+            if self.organizer_id.work_email:
+                emails.append(self.organizer_id.work_email)
+            elif self.organizer_id.user_id and self.organizer_id.user_id.email:
+                emails.append(self.organizer_id.user_id.email)
+        
+        return list(set(emails))  # Loại bỏ trùng lặp
+    
+    def _create_google_calendar_event(self):
+        """Tạo sự kiện trên Google Calendar"""
+        self.ensure_one()
+        
+        try:
+            gcal = self.env['google.calendar.integration'].get_active_integration()
+        except UserError:
+            # Không có cấu hình Google Calendar, bỏ qua
+            return
+        
+        # Chuẩn bị mô tả
+        description = f"📋 {self.subject}\n\n"
+        if self.description:
+            description += f"{self.description}\n\n"
+        description += f"📍 Phòng họp: {self.room_id.name}\n"
+        description += f"👤 Người tổ chức: {self.organizer_name}\n"
+        description += f"👥 Số người tham dự: {self.num_attendees}\n"
+        
+        # Lấy location
+        location = self.room_id.name
+        if self.room_id.location:
+            location = f"{self.room_id.name} - {self.room_id.location}"
+        
+        # Lấy link Zoom nếu có
+        meeting_link = self.zoom_join_url if self.meeting_type == 'online' else None
+        
+        result = gcal.create_event(
+            summary=f"{self.name} - {self.subject}",
+            start_datetime=self.start_datetime,
+            end_datetime=self.end_datetime,
+            description=description,
+            location=location,
+            attendees=self._get_attendee_emails(),
+            meeting_link=meeting_link,
+        )
+        
+        if result.get('success'):
+            self.write({
+                'google_calendar_event_id': result.get('event_id'),
+                'google_calendar_link': result.get('html_link'),
+                'google_sync_status': 'synced',
+            })
+            self.message_post(body=_(
+                '✅ Đã đồng bộ lên Google Calendar!\n'
+                '🔗 Link: %s'
+            ) % result.get('html_link'))
+        else:
+            self.write({'google_sync_status': 'error'})
+            self.message_post(body=_('❌ Lỗi khi tạo Google Calendar event: %s') % result.get('error'))
+    
+    def _update_google_calendar_event(self):
+        """Cập nhật sự kiện trên Google Calendar"""
+        self.ensure_one()
+        
+        if not self.google_calendar_event_id:
+            return
+        
+        try:
+            gcal = self.env['google.calendar.integration'].get_active_integration()
+        except UserError:
+            return
+        
+        description = f"📋 {self.subject}\n\n"
+        if self.description:
+            description += f"{self.description}\n\n"
+        if self.zoom_join_url:
+            description += f"\n🔗 Link họp Zoom: {self.zoom_join_url}\n"
+        
+        location = self.room_id.name
+        if self.room_id.location:
+            location = f"{self.room_id.name} - {self.room_id.location}"
+        
+        result = gcal.update_event(
+            event_id=self.google_calendar_event_id,
+            summary=f"{self.name} - {self.subject}",
+            start_datetime=self.start_datetime,
+            end_datetime=self.end_datetime,
+            description=description,
+            location=location,
+            attendees=self._get_attendee_emails(),
+        )
+        
+        if result.get('success'):
+            self.message_post(body=_('✅ Đã cập nhật Google Calendar event'))
+        else:
+            self.message_post(body=_('❌ Lỗi khi cập nhật Google Calendar event: %s') % result.get('error'))
+    
+    def _delete_google_calendar_event(self):
+        """Xóa sự kiện trên Google Calendar"""
+        self.ensure_one()
+        
+        if not self.google_calendar_event_id:
+            return
+        
+        try:
+            gcal = self.env['google.calendar.integration'].get_active_integration()
+            result = gcal.delete_event(self.google_calendar_event_id)
+            
+            if result.get('success'):
+                self.write({
+                    'google_calendar_event_id': False,
+                    'google_calendar_link': False,
+                    'google_sync_status': 'not_synced',
+                })
+                self.message_post(body=_('✅ Đã xóa Google Calendar event'))
+        except UserError:
+            pass
+    
+    def action_sync_google_calendar(self):
+        """Button để đồng bộ Google Calendar thủ công"""
+        self.ensure_one()
+        if self.google_calendar_event_id:
+            self._update_google_calendar_event()
+        else:
+            self._create_google_calendar_event()
+    
+    def action_open_google_calendar(self):
+        """Mở link Google Calendar"""
+        self.ensure_one()
+        if not self.google_calendar_link:
+            raise UserError(_('Chưa có link Google Calendar!'))
+        return {
+            'type': 'ir.actions.act_url',
+            'url': self.google_calendar_link,
+            'target': 'new',
+        }
+
+    # ==================== EMAIL NOTIFICATION METHODS ====================
+    
+    def _send_notification_emails(self):
+        """Gửi email thông báo đến tất cả người tham dự"""
+        self.ensure_one()
+        
+        # Kiểm tra xem đã gửi email chưa (nếu field tồn tại)
+        if hasattr(self, 'confirmation_email_sent') and self.confirmation_email_sent:
+            return
+        
+        template = self.env.ref('dnu_meeting_asset.email_template_booking_confirmation', raise_if_not_found=False)
+        if not template:
+            return
+        
+        # Gửi email cho người tổ chức
+        if self.organizer_id and self.organizer_id.work_email:
+            template.send_mail(self.id, force_send=True, email_values={
+                'email_to': self.organizer_id.work_email
+            })
+        
+        # Gửi email cho từng người tham dự
+        for attendee in self.attendee_ids:
+            if attendee.work_email:
+                template.send_mail(self.id, force_send=False, email_values={
+                    'email_to': attendee.work_email
+                })
+        
+        # Đánh dấu đã gửi (nếu field tồn tại)
+        if hasattr(self, 'confirmation_email_sent'):
+            self.write({'confirmation_email_sent': True})
+        
+        self.message_post(body=_('📧 Đã gửi email thông báo đến %s người') % (len(self.attendee_ids) + 1))
+    
+    def _send_update_notification_email(self):
+        """Gửi email thông báo khi có cập nhật"""
+        self.ensure_one()
+        
+        if self.state != 'confirmed':
+            return
+        
+        template = self.env.ref('dnu_meeting_asset.email_template_meeting_update', raise_if_not_found=False)
+        if not template:
+            return
+        
+        # Gửi cho người tổ chức
+        if self.organizer_id and self.organizer_id.work_email:
+            template.send_mail(self.id, force_send=True, email_values={
+                'email_to': self.organizer_id.work_email
+            })
+        
+        # Gửi cho người tham dự
+        for attendee in self.attendee_ids:
+            if attendee.work_email:
+                template.send_mail(self.id, force_send=False, email_values={
+                    'email_to': attendee.work_email
+                })
+        
+        self.message_post(body=_('📧 Đã gửi email thông báo cập nhật'))
+    
+    @api.model
+    def _cron_send_email_reminders(self):
+        """Cron job: Gửi email nhắc lịch họp 30 phút trước"""
+        from datetime import timedelta
+        
+        now = fields.Datetime.now()
+        reminder_time = now + timedelta(minutes=30)
+        
+        # Tìm các booking sắp diễn ra trong 30-35 phút tới
+        domain = [
+            ('state', '=', 'confirmed'),
+            ('start_datetime', '>=', now),
+            ('start_datetime', '<=', reminder_time),
+        ]
+        
+        # Nếu field reminder_email_sent tồn tại, thêm vào domain
+        if 'reminder_email_sent' in self._fields:
+            domain.append(('reminder_email_sent', '=', False))
+        
+        bookings = self.search(domain)
+        
+        template = self.env.ref('dnu_meeting_asset.email_template_meeting_reminder', raise_if_not_found=False)
+        if not template:
+            return
+        
+        for booking in bookings:
+            try:
+                # Gửi cho người tổ chức
+                if booking.organizer_id and booking.organizer_id.work_email:
+                    template.send_mail(booking.id, force_send=True, email_values={
+                        'email_to': booking.organizer_id.work_email
+                    })
+                
+                # Gửi cho người tham dự
+                for attendee in booking.attendee_ids:
+                    if attendee.work_email:
+                        template.send_mail(booking.id, force_send=False, email_values={
+                            'email_to': attendee.work_email
+                        })
+                
+                # Đánh dấu đã gửi (nếu field tồn tại)
+                if 'reminder_email_sent' in booking._fields:
+                    booking.write({'reminder_email_sent': True})
+                
+                booking.message_post(body=_('⏰ Đã gửi email nhắc lịch họp đến %s người') % (len(booking.attendee_ids) + 1))
+                
+            except Exception as e:
+                _logger.error(f"Error sending reminder email for booking {booking.name}: {str(e)}")
+                continue
+    
+    def _get_attendee_emails(self):
+        """Lấy danh sách email của người tham dự"""
+        self.ensure_one()
+        emails = []
+        
+        # Email người tổ chức
+        if self.organizer_id and self.organizer_id.work_email:
+            emails.append(self.organizer_id.work_email)
+        
+        # Email người tham dự
+        for attendee in self.attendee_ids:
+            if attendee.work_email:
+                emails.append(attendee.work_email)
+        
+        return emails
+    
+    # ==================== AI Integration Methods ====================
+    
+    def action_ai_generate_summary(self):
+        """Mở wizard AI tạo biên bản cuộc họp"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': '📝 AI Tạo biên bản',
+            'res_model': 'ai.meeting.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_action_type': 'summary',
+                'default_booking_id': self.id,
+                'default_meeting_notes': self.notes,
+            }
+        }
+    
+    def action_ai_generate_agenda(self):
+        """Mở wizard AI tạo agenda cuộc họp"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': '📋 AI Tạo agenda',
+            'res_model': 'ai.meeting.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_action_type': 'agenda',
+                'default_meeting_subject': self.subject,
+                'default_meeting_description': self.description,
+                'default_duration_hours': self.duration or 1.0,
+            }
+        }

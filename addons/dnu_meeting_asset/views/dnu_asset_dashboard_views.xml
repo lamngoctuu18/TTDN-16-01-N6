@@ -1,171 +1,299 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Asset Management Dashboard -->
-    <record id="view_asset_dashboard_kanban" model="ir.ui.view">
-        <field name="name">Asset Dashboard</field>
-        <field name="model">dnu.asset.dashboard</field>
+    <!-- ============================================= -->
+    <!-- GRAPH VIEWS - BIỂU ĐỒ THỐNG KÊ              -->
+    <!-- ============================================= -->
+    
+    <!-- 1. Biểu đồ Tròn - Tài sản theo Trạng thái -->
+    <record id="view_asset_state_graph_pie" model="ir.ui.view">
+        <field name="name">asset.state.graph.pie</field>
+        <field name="model">dnu.asset</field>
         <field name="arch" type="xml">
-            <kanban class="o_kanban_dashboard o_asset_kanban" create="false">
-                <field name="total_assets"/>
-                <field name="total_value"/>
-                <field name="available_assets"/>
-                <field name="assigned_assets"/>
-                <field name="maintenance_assets"/>
-                <field name="disposed_assets"/>
-                <field name="pending_lendings"/>
-                <field name="active_lendings"/>
-                <field name="overdue_lendings"/>
-                <field name="total_depreciation"/>
-                <field name="current_total_value"/>
-                <templates>
-                    <t t-name="kanban-box">
-                        <div class="container o_kanban_card_content">
-                            <div class="row">
-                                <!-- Tổng quan tài sản -->
-                                <div class="col-md-12 mb-3">
-                                    <h3>Tổng quan Tài sản</h3>
-                                </div>
-                                <div class="col-md-3">
-                                    <a type="action" name="%(action_dnu_asset)d" class="d-block">
-                                        <div class="card bg-primary text-white">
-                                            <div class="card-body text-center">
-                                                <h1><t t-esc="record.total_assets.value"/></h1>
-                                                <p>Tổng tài sản</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a type="action" name="%(action_dnu_asset)d" context="{'search_default_available': 1}" class="d-block">
-                                        <div class="card bg-success text-white">
-                                            <div class="card-body text-center">
-                                                <h1><t t-esc="record.available_assets.value"/></h1>
-                                                <p>Sẵn sàng</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a type="action" name="%(action_dnu_asset)d" context="{'search_default_assigned': 1}" class="d-block">
-                                        <div class="card bg-info text-white">
-                                            <div class="card-body text-center">
-                                                <h1><t t-esc="record.assigned_assets.value"/></h1>
-                                                <p>Đã gán</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a type="action" name="%(action_dnu_asset)d" context="{'search_default_maintenance': 1}" class="d-block">
-                                        <div class="card bg-warning text-white">
-                                            <div class="card-body text-center">
-                                                <h1><t t-esc="record.maintenance_assets.value"/></h1>
-                                                <p>Bảo trì</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="row mt-3">
-                                <!-- Mượn trả -->
-                                <div class="col-md-12 mb-3">
-                                    <h3>Tình hình Mượn trả</h3>
-                                </div>
-                                <div class="col-md-4">
-                                    <a type="action" name="%(action_dnu_asset_lending)d" context="{'search_default_pending': 1}" class="d-block">
-                                        <div class="card border-warning">
-                                            <div class="card-body text-center">
-                                                <h2><t t-esc="record.pending_lendings.value"/></h2>
-                                                <p>Chờ duyệt</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                                <div class="col-md-4">
-                                    <a type="action" name="%(action_dnu_asset_lending)d" context="{'search_default_approved': 1}" class="d-block">
-                                        <div class="card border-success">
-                                            <div class="card-body text-center">
-                                                <h2><t t-esc="record.active_lendings.value"/></h2>
-                                                <p>Đang mượn</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                                <div class="col-md-4">
-                                    <a type="action" name="%(action_dnu_asset_lending)d" context="{'search_default_overdue': 1}" class="d-block">
-                                        <div class="card border-danger">
-                                            <div class="card-body text-center">
-                                                <h2><t t-esc="record.overdue_lendings.value"/></h2>
-                                                <p>Quá hạn</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="row mt-3">
-                                <!-- Khấu hao -->
-                                <div class="col-md-12 mb-3">
-                                    <h3>Khấu hao &amp; Giá trị</h3>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h4>Tổng khấu hao</h4>
-                                            <h2><t t-esc="record.total_depreciation.value"/> VNĐ</h2>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h4>Giá trị hiện tại</h4>
-                                            <h2><t t-esc="record.current_total_value.value"/> VNĐ</h2>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row mt-3">
-                                <!-- Quick Actions -->
-                                <div class="col-md-12 mb-3">
-                                    <h3>Thao tác nhanh</h3>
-                                </div>
-                                <div class="col-md-3">
-                                    <button type="action" name="%(action_dnu_asset_lending)d" class="btn btn-primary btn-block">
-                                        <i class="fa fa-hand-paper-o"/> Mượn tài sản
-                                    </button>
-                                </div>
-                                <div class="col-md-3">
-                                    <button type="action" name="%(action_asset_depreciation)d" class="btn btn-info btn-block">
-                                        <i class="fa fa-line-chart"/> Khấu hao
-                                    </button>
-                                </div>
-                                <div class="col-md-3">
-                                    <button type="action" name="%(action_asset_inventory)d" class="btn btn-warning btn-block">
-                                        <i class="fa fa-clipboard"/> Kiểm kê
-                                    </button>
-                                </div>
-                                <div class="col-md-3">
-                                    <button type="action" name="%(action_asset_transfer)d" class="btn btn-success btn-block">
-                                        <i class="fa fa-exchange"/> Luân chuyển
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </t>
-                </templates>
-            </kanban>
+            <graph string="Phân bổ Tài sản theo Trạng thái" type="pie" stacked="False">
+                <field name="state"/>
+            </graph>
         </field>
     </record>
 
-    <!-- Dashboard Action -->
-    <record id="action_asset_dashboard" model="ir.actions.act_window">
-        <field name="name">Dashboard Quản lý Tài sản</field>
-        <field name="res_model">dnu.asset.dashboard</field>
-        <field name="view_mode">kanban</field>
-        <field name="view_id" ref="view_asset_dashboard_kanban"/>
+    <!-- 2. Biểu đồ Cột - Tài sản theo Danh mục -->
+    <record id="view_asset_category_graph_bar" model="ir.ui.view">
+        <field name="name">asset.category.graph.bar</field>
+        <field name="model">dnu.asset</field>
+        <field name="arch" type="xml">
+            <graph string="Tài sản theo Danh mục" type="bar" stacked="True">
+                <field name="category_id"/>
+                <field name="state" type="col"/>
+            </graph>
+        </field>
     </record>
+
+    <!-- 3. Biểu đồ Cột - Giá trị Tài sản theo Danh mục -->
+    <record id="view_asset_value_graph_bar" model="ir.ui.view">
+        <field name="name">asset.value.graph.bar</field>
+        <field name="model">dnu.asset</field>
+        <field name="arch" type="xml">
+            <graph string="Giá trị Tài sản theo Danh mục" type="bar">
+                <field name="category_id"/>
+                <field name="current_value" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- 4. Biểu đồ Đường - Đặt phòng theo Thời gian -->
+    <record id="view_booking_timeline_graph_line" model="ir.ui.view">
+        <field name="name">booking.timeline.graph.line</field>
+        <field name="model">dnu.meeting.booking</field>
+        <field name="arch" type="xml">
+            <graph string="Xu hướng Đặt phòng" type="line">
+                <field name="start_datetime" interval="day"/>
+                <field name="state" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- 5. Biểu đồ Cột - Đặt phòng theo Phòng -->
+    <record id="view_booking_room_graph_bar" model="ir.ui.view">
+        <field name="name">booking.room.graph.bar</field>
+        <field name="model">dnu.meeting.booking</field>
+        <field name="arch" type="xml">
+            <graph string="Đặt phòng theo Phòng họp" type="bar">
+                <field name="room_id"/>
+                <field name="state" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- 6. Biểu đồ Tròn - Bảo trì theo Trạng thái -->
+    <record id="view_maintenance_state_graph_pie" model="ir.ui.view">
+        <field name="name">maintenance.state.graph.pie</field>
+        <field name="model">dnu.asset.maintenance</field>
+        <field name="arch" type="xml">
+            <graph string="Bảo trì theo Trạng thái" type="pie">
+                <field name="state"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- 7. Biểu đồ Đường - Bảo trì theo Thời gian -->
+    <record id="view_maintenance_timeline_graph_line" model="ir.ui.view">
+        <field name="name">maintenance.timeline.graph.line</field>
+        <field name="model">dnu.asset.maintenance</field>
+        <field name="arch" type="xml">
+            <graph string="Xu hướng Bảo trì" type="line">
+                <field name="date_reported" interval="week"/>
+                <field name="maintenance_type" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- 8. Biểu đồ Cột - Mượn trả theo Trạng thái -->
+    <record id="view_lending_state_graph_bar" model="ir.ui.view">
+        <field name="name">lending.state.graph.bar</field>
+        <field name="model">dnu.asset.lending</field>
+        <field name="arch" type="xml">
+            <graph string="Mượn trả theo Trạng thái" type="bar">
+                <field name="state"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ============================================= -->
+    <!-- DASHBOARD ACTIONS - BIỂU ĐỒ                  -->
+    <!-- ============================================= -->
+    
+    <!-- Action: Thống kê Tài sản - Biểu đồ Tròn & Cột -->
+    <record id="action_asset_statistics" model="ir.actions.act_window">
+        <field name="name">Thống kê Tài sản</field>
+        <field name="res_model">dnu.asset</field>
+        <field name="view_mode">graph,pivot,kanban,tree</field>
+        <field name="context">{
+            'group_by': ['state', 'category_id'],
+            'graph_mode': 'pie',
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thống kê Tài sản
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Thống kê Đặt phòng - Biểu đồ Đường & Cột -->
+    <record id="action_booking_statistics" model="ir.actions.act_window">
+        <field name="name">Thống kê Đặt phòng</field>
+        <field name="res_model">dnu.meeting.booking</field>
+        <field name="view_mode">graph,pivot,calendar,tree</field>
+        <field name="context">{
+            'group_by': ['start_datetime:day', 'state'],
+            'graph_mode': 'line',
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thống kê Đặt phòng
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Thống kê Bảo trì - Biểu đồ Đường & Tròn -->
+    <record id="action_maintenance_statistics" model="ir.actions.act_window">
+        <field name="name">Thống kê Bảo trì</field>
+        <field name="res_model">dnu.asset.maintenance</field>
+        <field name="view_mode">graph,pivot,tree</field>
+        <field name="context">{
+            'group_by': ['state', 'maintenance_type'],
+            'graph_mode': 'pie',
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thống kê Bảo trì
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Thống kê Mượn trả - Biểu đồ Cột -->
+    <record id="action_lending_statistics" model="ir.actions.act_window">
+        <field name="name">Thống kê Mượn trả</field>
+        <field name="res_model">dnu.asset.lending</field>
+        <field name="view_mode">graph,pivot,tree</field>
+        <field name="context">{
+            'group_by': ['state'],
+            'graph_mode': 'bar',
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Thống kê Mượn trả
+            </p>
+        </field>
+    </record>
+
+    <!-- Dashboard Action - Menu Chính -->
+    <record id="action_asset_meeting_dashboard" model="ir.actions.act_window">
+        <field name="name">Bảng điều khiển</field>
+        <field name="res_model">dnu.asset</field>
+        <field name="view_mode">graph,pivot,kanban,tree</field>
+        <field name="view_id" ref="view_asset_state_graph_pie"/>
+        <field name="context">{
+            'group_by': ['state'],
+            'graph_mode': 'pie',
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chào mừng đến với Bảng điều khiển Tài sản &amp; Phòng họp
+            </p>
+            <p>Xem thống kê và biểu đồ phân tích dữ liệu.</p>
+        </field>
+    </record>
+
+    <!-- ============================================= -->
+    <!-- DASHBOARD ACTIONS - TÀI SẢN                  -->
+    <!-- ============================================= -->
+    
+    <!-- Action: Dashboard Tài sản -->
+    <record id="action_dashboard_assets" model="ir.actions.act_window">
+        <field name="name">Tất cả Tài sản</field>
+        <field name="res_model">dnu.asset</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Chưa có tài sản nào!</p>
+            <p>Nhấn "Tạo" để thêm tài sản mới.</p>
+        </field>
+    </record>
+    
+    <record id="action_dashboard_assets_available" model="ir.actions.act_window">
+        <field name="name">Tài sản Sẵn sàng</field>
+        <field name="res_model">dnu.asset</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('state', '=', 'available')]</field>
+    </record>
+    
+    <record id="action_dashboard_assets_assigned" model="ir.actions.act_window">
+        <field name="name">Tài sản Đã gán</field>
+        <field name="res_model">dnu.asset</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('state', '=', 'assigned')]</field>
+    </record>
+    
+    <record id="action_dashboard_assets_maintenance" model="ir.actions.act_window">
+        <field name="name">Tài sản Đang bảo trì</field>
+        <field name="res_model">dnu.asset</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('state', '=', 'maintenance')]</field>
+    </record>
+    
+    <!-- ============================================= -->
+    <!-- DASHBOARD ACTIONS - PHÒNG HỌP                -->
+    <!-- ============================================= -->
+    
+    <record id="action_dashboard_rooms" model="ir.actions.act_window">
+        <field name="name">Tất cả Phòng họp</field>
+        <field name="res_model">dnu.meeting.room</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
+    
+    <record id="action_dashboard_rooms_available" model="ir.actions.act_window">
+        <field name="name">Phòng Sẵn sàng</field>
+        <field name="res_model">dnu.meeting.room</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('state', '=', 'available'), ('allow_booking', '=', True)]</field>
+    </record>
+    
+    <!-- ============================================= -->
+    <!-- DASHBOARD ACTIONS - ĐẶT PHÒNG                -->
+    <!-- ============================================= -->
+    
+    <record id="action_dashboard_bookings_today" model="ir.actions.act_window">
+        <field name="name">Đặt phòng Hôm nay</field>
+        <field name="res_model">dnu.meeting.booking</field>
+        <field name="view_mode">tree,form,calendar</field>
+        <field name="domain">[('start_datetime', '&gt;=', (context_today()).strftime('%Y-%m-%d 00:00:00')), 
+                              ('start_datetime', '&lt;', (context_today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d 00:00:00'))]</field>
+        <field name="context">{'search_default_confirmed': 1}</field>
+    </record>
+    
+    <record id="action_dashboard_bookings_week" model="ir.actions.act_window">
+        <field name="name">Đặt phòng Tuần này</field>
+        <field name="res_model">dnu.meeting.booking</field>
+        <field name="view_mode">calendar,tree,form</field>
+        <field name="context">{'search_default_confirmed': 1}</field>
+    </record>
+    
+    <record id="action_dashboard_bookings_pending" model="ir.actions.act_window">
+        <field name="name">Chờ duyệt</field>
+        <field name="res_model">dnu.meeting.booking</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'submitted')]</field>
+    </record>
+    
+    <!-- ============================================= -->
+    <!-- DASHBOARD ACTIONS - BẢO TRÌ                  -->
+    <!-- ============================================= -->
+    
+    <record id="action_dashboard_maintenance_pending" model="ir.actions.act_window">
+        <field name="name">Bảo trì Chờ xử lý</field>
+        <field name="res_model">dnu.asset.maintenance</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', 'in', ['pending', 'scheduled'])]</field>
+    </record>
+    
+    <!-- ============================================= -->
+    <!-- DASHBOARD ACTIONS - MƯỢN TRẢ                 -->
+    <!-- ============================================= -->
+    
+    <record id="action_dashboard_lending_pending" model="ir.actions.act_window">
+        <field name="name">Mượn Chờ duyệt</field>
+        <field name="res_model">dnu.asset.lending</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'pending')]</field>
+    </record>
+    
+    <record id="action_dashboard_lending_overdue" model="ir.actions.act_window">
+        <field name="name">Mượn Quá hạn</field>
+        <field name="res_model">dnu.asset.lending</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('state', '=', 'overdue')]</field>
+    </record>
+
+    <!-- ============================================= -->
+    <!-- BẢNG ĐIỀU KHIỂN (MENUS)                       -->
+    <!-- ============================================= -->
 
 </odoo>

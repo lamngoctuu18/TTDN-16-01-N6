@@ -113,6 +113,11 @@ class Asset(models.Model):
         'asset_id',
         string='Lịch sử mượn'
     )
+    handover_ids = fields.One2many(
+        'dnu.asset.handover',
+        'asset_id',
+        string='Biên bản bàn giao'
+    )
     depreciation_ids = fields.One2many(
         'dnu.asset.depreciation',
         'asset_id',
@@ -143,9 +148,24 @@ class Asset(models.Model):
         compute='_compute_maintenance_count',
         string='Số lần bảo trì'
     )
+    is_borrowed = fields.Boolean(
+        compute='_compute_is_borrowed',
+        string='Đang được mượn',
+        store=False,
+        help='Tài sản hiện đang được mượn và chưa trả'
+    )
+    current_borrower = fields.Char(
+        compute='_compute_is_borrowed',
+        string='Người đang mượn',
+        store=False
+    )
     lending_count = fields.Integer(
         compute='_compute_lending_count',
         string='Số lần mượn'
+    )
+    handover_count = fields.Integer(
+        compute='_compute_handover_count',
+        string='Số biên bản'
     )
     transfer_count = fields.Integer(
         compute='_compute_transfer_count',
@@ -184,10 +204,29 @@ class Asset(models.Model):
         for asset in self:
             asset.maintenance_count = len(asset.maintenance_ids)
     
+    @api.depends('lending_ids', 'lending_ids.state', 'lending_ids.date_expected_return', 'lending_ids.borrower_name')
+    def _compute_is_borrowed(self):
+        """Kiểm tra xem tài sản có đang được mượn không"""
+        for asset in self:
+            # Tìm phiếu mượn đang active (đã duyệt hoặc đang mượn)
+            active_lending = self.env['dnu.asset.lending'].search([
+                ('asset_id', '=', asset.id),
+                ('state', 'in', ['approved', 'borrowed']),
+                ('date_expected_return', '>=', fields.Datetime.now())
+            ], limit=1, order='date_borrow desc')
+            
+            asset.is_borrowed = bool(active_lending)
+            asset.current_borrower = active_lending.borrower_name if active_lending else False
+    
     @api.depends('lending_ids')
     def _compute_lending_count(self):
         for asset in self:
             asset.lending_count = len(asset.lending_ids)
+
+    @api.depends('handover_ids')
+    def _compute_handover_count(self):
+        for asset in self:
+            asset.handover_count = len(asset.handover_ids)
     
     @api.depends('transfer_ids')
     def _compute_transfer_count(self):
@@ -256,6 +295,43 @@ class Asset(models.Model):
             'res_model': 'dnu.asset.maintenance',
             'view_mode': 'tree,form',
             'domain': [('asset_id', '=', self.id)],
+        }
+
+    def action_view_lendings(self):
+        """Xem lịch sử mượn"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Lịch sử mượn tài sản',
+            'res_model': 'dnu.asset.lending',
+            'view_mode': 'kanban,tree,form',
+            'domain': [('asset_id', '=', self.id)],
+        }
+
+    def action_view_handovers(self):
+        """Xem biên bản bàn giao"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Biên bản bàn giao',
+            'res_model': 'dnu.asset.handover',
+            'view_mode': 'tree,form',
+            'domain': [('asset_id', '=', self.id)],
+        }
+    
+    def action_ai_suggest_maintenance(self):
+        """Mở wizard AI gợi ý bảo trì"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': '🤖 AI Gợi ý bảo trì',
+            'res_model': 'ai.asset.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_action_type': 'maintenance',
+                'default_asset_id': self.id,
+            }
         }
     
     @api.constrains('state', 'assigned_to', 'assigned_nhan_vien_id')

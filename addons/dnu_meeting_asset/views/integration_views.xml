@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Zoom Integration Form View -->
+        <record id="view_zoom_integration_form" model="ir.ui.view">
+            <field name="name">zoom.integration.form</field>
+            <field name="model">zoom.integration</field>
+            <field name="arch" type="xml">
+                <form string="Cấu hình Zoom">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group string="Thông tin xác thực Zoom (Server-to-Server OAuth)">
+                                <field name="account_id"/>
+                                <field name="client_id"/>
+                                <field name="client_secret" password="True"/>
+                            </group>
+                            <group string="Trạng thái">
+                                <field name="is_active"/>
+                                <field name="access_token" password="True" readonly="1"/>
+                                <field name="token_expiry" readonly="1"/>
+                            </group>
+                        </group>
+                        <div class="alert alert-info" role="alert">
+                            <strong>Hướng dẫn:</strong>
+                            <ol>
+                                <li>Truy cập <a href="https://marketplace.zoom.us/" target="_blank">Zoom Marketplace</a></li>
+                                <li>Tạo ứng dụng "Server-to-Server OAuth"</li>
+                                <li>Sao chép Account ID, Client ID, Client Secret vào đây</li>
+                                <li>Cấp quyền "meeting:write" cho ứng dụng</li>
+                            </ol>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Zoom Integration Tree View -->
+        <record id="view_zoom_integration_tree" model="ir.ui.view">
+            <field name="name">zoom.integration.tree</field>
+            <field name="model">zoom.integration</field>
+            <field name="arch" type="xml">
+                <tree string="Cấu hình Zoom">
+                    <field name="name"/>
+                    <field name="account_id"/>
+                    <field name="is_active"/>
+                    <field name="token_expiry"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Zoom Integration Action -->
+        <record id="action_zoom_integration" model="ir.actions.act_window">
+            <field name="name">Cấu hình Zoom</field>
+            <field name="res_model">zoom.integration</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Cấu hình tích hợp Zoom API
+                </p>
+                <p>
+                    Thiết lập thông tin xác thực Zoom Server-to-Server OAuth để tự động tạo phòng họp Zoom.
+                </p>
+            </field>
+        </record>
+
+        <!-- Google Calendar Integration Form View -->
+        <record id="view_google_calendar_integration_form" model="ir.ui.view">
+            <field name="name">google.calendar.integration.form</field>
+            <field name="model">google.calendar.integration</field>
+            <field name="arch" type="xml">
+                <form string="Cấu hình Google Calendar">
+                    <header>
+                        <button name="action_open_authorization_url" string="🔐 Authorize Google" type="object" class="oe_highlight" help="Mở URL để authorize Google Calendar và lấy tokens"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group string="Thông tin xác thực Google (OAuth 2.0)">
+                                <field name="client_id"/>
+                                <field name="client_secret" password="True"/>
+                                <field name="redirect_uri" readonly="1"/>
+                                <field name="refresh_token" password="True" readonly="1"/>
+                                <field name="calendar_id" placeholder="primary"/>
+                            </group>
+                            <group string="Trạng thái">
+                                <field name="is_active"/>
+                                <field name="access_token" password="True" readonly="1"/>
+                                <field name="token_expiry" readonly="1"/>
+                            </group>
+                        </group>
+                        <div class="alert alert-warning" role="alert" attrs="{'invisible': [('refresh_token', '!=', False)]}">
+                            <strong>⚠️ CHƯA CÓ REFRESH TOKEN!</strong><br/>
+                            Vui lòng bấm nút <strong>"🔐 Authorize Google"</strong> ở trên để hoàn tất OAuth flow và lấy tokens.
+                        </div>
+                        <div class="alert alert-success" role="alert" attrs="{'invisible': [('refresh_token', '=', False)]}">
+                            <strong>✅ ĐÃ AUTHORIZE THÀNH CÔNG!</strong><br/>
+                            Google Calendar integration đã sẵn sàng sử dụng.
+                        </div>
+                        <div class="alert alert-info" role="alert">
+                            <strong>Hướng dẫn OAuth Setup (QUAN TRỌNG):</strong>
+                            <ol>
+                                <li><strong>Google Cloud Console Setup:</strong>
+                                    <ul>
+                                        <li>Vào <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                                        <li>APIs &amp; Services → Credentials → CREATE CREDENTIALS → OAuth 2.0 Client ID</li>
+                                        <li>Application type: <strong>Web application</strong></li>
+                                        <li>Authorized redirect URIs: <strong><code>http://localhost:8069/google_calendar/callback</code></strong> (PHẢI GIỐNG 100%)</li>
+                                        <li>Enable Google Calendar API trong Library</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Lấy Tokens:</strong>
+                                    <ul>
+                                        <li>Thay YOUR_CLIENT_ID trong URL sau:</li>
+                                        <li><code>https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_CLIENT_ID&amp;redirect_uri=http://localhost:8069/google_calendar/callback&amp;scope=https://www.googleapis.com/auth/calendar&amp;response_type=code&amp;access_type=offline&amp;prompt=consent</code></li>
+                                        <li>⚠️ <strong>BẮT BUỘC</strong> có <code>access_type=offline</code> và <code>prompt=consent</code> để nhận refresh_token</li>
+                                        <li>User authorize → redirect về Odoo → tokens tự động lưu</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Lưu ý:</strong> Google CHỈ trả refresh_token lần đầu authorize với access_type=offline</li>
+                            </ol>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Google Calendar Integration Tree View -->
+        <record id="view_google_calendar_integration_tree" model="ir.ui.view">
+            <field name="name">google.calendar.integration.tree</field>
+            <field name="model">google.calendar.integration</field>
+            <field name="arch" type="xml">
+                <tree string="Cấu hình Google Calendar">
+                    <field name="name"/>
+                    <field name="calendar_id"/>
+                    <field name="is_active"/>
+                    <field name="token_expiry"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Google Calendar Integration Action -->
+        <record id="action_google_calendar_integration" model="ir.actions.act_window">
+            <field name="name">Cấu hình Google Calendar</field>
+            <field name="res_model">google.calendar.integration</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Cấu hình tích hợp Google Calendar API
+                </p>
+                <p>
+                    Thiết lập thông tin xác thực Google OAuth 2.0 để tự động đồng bộ lịch họp lên Google Calendar.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

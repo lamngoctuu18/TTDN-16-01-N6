@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Cron: Auto Archive Inactive Rooms -->
+    <record id="cron_archive_inactive_rooms" model="ir.cron">
+        <field name="name">Event: Archive Inactive Meeting Rooms</field>
+        <field name="model_id" ref="model_event_meeting_room"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_archive_inactive_rooms()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

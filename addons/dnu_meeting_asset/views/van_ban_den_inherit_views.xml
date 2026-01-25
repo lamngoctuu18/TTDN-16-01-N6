@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_van_ban_den_search_inherit_meeting" model="ir.ui.view">
+            <field name="name">van_ban_den.search.inherit.meeting</field>
+            <field name="model">van_ban_den</field>
+            <field name="inherit_id" ref="quan_ly_van_ban.van_ban_den_search"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search/field[@name='source_model']" position="after">
+                    <field name="meeting_room_id"/>
+                    <field name="meeting_booking_id"/>
+                </xpath>
+
+                <xpath expr="//search/filter[@name='filter_asset']" position="after">
+                    <filter name="filter_meeting_room" string="Theo phòng họp" domain="[('meeting_room_id', '!=', False)]"/>
+                    <filter name="filter_meeting_booking" string="Theo booking" domain="[('meeting_booking_id', '!=', False)]"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_van_ban_den_tree_inherit_meeting" model="ir.ui.view">
+            <field name="name">van_ban_den.tree.inherit.meeting</field>
+            <field name="model">van_ban_den</field>
+            <field name="inherit_id" ref="quan_ly_van_ban.view_van_ban_den_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//tree/field[@name='noi_gui_den']" position="after">
+                    <field name="meeting_room_id" optional="hide"/>
+                    <field name="meeting_booking_id" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

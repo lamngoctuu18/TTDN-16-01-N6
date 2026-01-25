@@ -46,8 +46,47 @@
                 <td style="padding: 5px;"><strong>Vị trí:</strong></td>
                 <td style="padding: 5px;">${object.room_id.location or 'N/A'}</td>
             </tr>
+            % if object.meeting_type == 'online':
+            <tr>
+                <td style="padding: 5px;"><strong>Loại cuộc họp:</strong></td>
+                <td style="padding: 5px;">Trực tuyến (Online)</td>
+            </tr>
+            % endif
+            % if object.zoom_join_url:
+            <tr>
+                <td style="padding: 5px;"><strong>Link Zoom:</strong></td>
+                <td style="padding: 5px;">
+                    <a href="${object.zoom_join_url}" style="color: #2980b9;">${object.zoom_join_url}</a>
+                </td>
+            </tr>
+            % if object.zoom_password:
+            <tr>
+                <td style="padding: 5px;"><strong>Password Zoom:</strong></td>
+                <td style="padding: 5px;">${object.zoom_password}</td>
+            </tr>
+            % endif
+            % endif
+            % if object.google_calendar_link:
+            <tr>
+                <td style="padding: 5px;"><strong>Google Calendar:</strong></td>
+                <td style="padding: 5px;">
+                    <a href="${object.google_calendar_link}" style="color: #27ae60;">Xem trong Google Calendar</a>
+                </td>
+            </tr>
+            % endif
         </table>
     </div>
+    
+    % if object.attendee_ids:
+    <div style="margin: 20px 0;">
+        <strong>Người tham dự:</strong>
+        <ul style="margin-top: 5px;">
+            % for attendee in object.attendee_ids:
+            <li>${attendee.name} (${attendee.work_email or 'Không có email'})</li>
+            % endfor
+        </ul>
+    </div>
+    % endif
     
     % if object.description:
     <p><strong>Mô tả:</strong><br/>
@@ -293,6 +332,678 @@
     
     <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
         Đây là email nhắc nhở tự động.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- ====== AUTOMATION EMAIL TEMPLATES ====== -->
+
+        <!-- Email Template: Escalation to Manager (Level 2) -->
+        <record id="email_template_lending_escalation_manager" model="mail.template">
+            <field name="name">Asset Lending: Escalation to Manager</field>
+            <field name="model_id" ref="model_dnu_asset_lending"/>
+            <field name="subject">⚠️ [ESCALATION] Nhân viên có tài sản quá hạn - ${object.borrower_name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${ctx.get('manager_email', '') or object.borrower_id.parent_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #e67e22;">⚠️ THÔNG BÁO ESCALATION - TÀI SẢN QUÁ HẠN</h2>
+    
+    <p>Kính gửi Quản lý,</p>
+    
+    <p>Đây là thông báo escalation về tình trạng <strong style="color: #e74c3c;">tài sản mượn quá hạn</strong> của nhân viên thuộc phòng ban bạn quản lý.</p>
+    
+    <div style="background-color: #fdf2e9; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #e67e22;">
+        <h4 style="margin-top: 0;">Thông tin chi tiết:</h4>
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Nhân viên:</strong></td>
+                <td style="padding: 5px;">${object.borrower_name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Phòng ban:</strong></td>
+                <td style="padding: 5px;">${object.borrower_id.department_id.name if object.borrower_id and object.borrower_id.department_id else 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Mã phiếu mượn:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Tài sản:</strong></td>
+                <td style="padding: 5px;">${object.asset_id.name} (${object.asset_id.code})</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Hạn trả:</strong></td>
+                <td style="padding: 5px; color: #e74c3c;"><strong>${format_datetime(object.date_expected_return, dt_format='dd/MM/yyyy HH:mm')}</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Số ngày quá hạn:</strong></td>
+                <td style="padding: 5px; color: #e74c3c;"><strong>${object.overdue_days} ngày</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Cấp escalation:</strong></td>
+                <td style="padding: 5px;"><strong>Cấp 2 - Thông báo Quản lý</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <p><strong>Yêu cầu:</strong> Vui lòng nhắc nhở nhân viên <strong>${object.borrower_name}</strong> trả tài sản ngay lập tức.</p>
+    
+    <p>Nếu tình trạng này tiếp tục, hệ thống sẽ tự động escalate lên Ban Giám đốc / Phòng HCNS.</p>
+    
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.asset.lending&amp;view_type=form" 
+           style="background-color: #e67e22; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem chi tiết
+        </a>
+    </p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email thông báo tự động từ hệ thống quản lý tài sản.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Escalation Level 3 (HR/Director) -->
+        <record id="email_template_lending_escalation_hr" model="mail.template">
+            <field name="name">Asset Lending: Critical Escalation (HR/Director)</field>
+            <field name="model_id" ref="model_dnu_asset_lending"/>
+            <field name="subject">🚨 [KHẨN CẤP] Tài sản quá hạn nghiêm trọng - ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #c0392b;">🚨 CẢNH BÁO KHẨN CẤP - TÀI SẢN QUÁ HẠN NGHIÊM TRỌNG</h2>
+    
+    <p>Kính gửi Ban lãnh đạo / Phòng HCNS,</p>
+    
+    <p>Đây là thông báo <strong style="color: #c0392b;">ESCALATION CẤP 3</strong> về tình trạng tài sản quá hạn nghiêm trọng cần xử lý khẩn cấp.</p>
+    
+    <div style="background-color: #fdedec; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #c0392b;">
+        <h4 style="margin-top: 0; color: #c0392b;">⚠️ THÔNG TIN KHẨN CẤP:</h4>
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Người mượn:</strong></td>
+                <td style="padding: 5px;">${object.borrower_name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Phòng ban:</strong></td>
+                <td style="padding: 5px;">${object.borrower_id.department_id.name if object.borrower_id and object.borrower_id.department_id else 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Tài sản:</strong></td>
+                <td style="padding: 5px;">${object.asset_id.name} (${object.asset_id.code})</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Giá trị tài sản:</strong></td>
+                <td style="padding: 5px;">${'{:,.0f}'.format(object.asset_id.purchase_value or 0)} VNĐ</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Số ngày quá hạn:</strong></td>
+                <td style="padding: 5px; color: #c0392b; font-size: 18px;"><strong>${object.overdue_days} NGÀY</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <h4>Lịch sử escalation:</h4>
+    <ul>
+        <li>Ngày 1: Nhắc nhở người mượn</li>
+        <li>Ngày 3: Thông báo Quản lý phòng ban</li>
+        <li><strong>Ngày 7+: Thông báo Ban lãnh đạo / HCNS (HIỆN TẠI)</strong></li>
+    </ul>
+    
+    <p><strong style="color: #c0392b;">Đề xuất xử lý:</strong></p>
+    <ul>
+        <li>Liên hệ trực tiếp với nhân viên để thu hồi tài sản</li>
+        <li>Xem xét các biện pháp kỷ luật phù hợp</li>
+        <li>Kiểm tra lại quy trình mượn tài sản</li>
+    </ul>
+    
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.asset.lending&amp;view_type=form" 
+           style="background-color: #c0392b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem và xử lý
+        </a>
+    </p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email cảnh báo khẩn cấp tự động từ hệ thống quản lý tài sản.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Warranty Expiry Reminder -->
+        <record id="email_template_warranty_expiry" model="mail.template">
+            <field name="name">Asset: Warranty Expiry Reminder</field>
+            <field name="model_id" ref="model_dnu_asset"/>
+            <field name="subject">⏰ Bảo hành sắp hết hạn: ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #f39c12;">⏰ Nhắc nhở: Bảo hành sắp hết hạn</h2>
+    
+    <p>Xin chào,</p>
+    
+    <p>Tài sản sau đây sắp hết hạn bảo hành:</p>
+    
+    <div style="background-color: #fef9e7; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #f39c12;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Tên tài sản:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Mã tài sản:</strong></td>
+                <td style="padding: 5px;">${object.code}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Danh mục:</strong></td>
+                <td style="padding: 5px;">${object.category_id.name if object.category_id else 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Ngày hết bảo hành:</strong></td>
+                <td style="padding: 5px; color: #e67e22;"><strong>${format_date(object.warranty_expiry)}</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Nhà cung cấp:</strong></td>
+                <td style="padding: 5px;">${object.supplier_id.name if object.supplier_id else 'N/A'}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <p><strong>Khuyến nghị:</strong></p>
+    <ul>
+        <li>Kiểm tra tình trạng tài sản trước khi hết bảo hành</li>
+        <li>Liên hệ nhà cung cấp nếu cần sửa chữa/thay thế</li>
+        <li>Cân nhắc gia hạn bảo hành hoặc mua hợp đồng bảo trì</li>
+    </ul>
+    
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.asset&amp;view_type=form" 
+           style="background-color: #f39c12; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem chi tiết tài sản
+        </a>
+    </p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email nhắc nhở tự động từ hệ thống quản lý tài sản.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Asset Return Request (Offboarding) -->
+        <record id="email_template_asset_return_offboarding" model="mail.template">
+            <field name="name">Asset: Return Request (Offboarding)</field>
+            <field name="model_id" ref="model_hr_employee"/>
+            <field name="subject">🔄 Yêu cầu thu hồi tài sản: ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #3498db;">🔄 Yêu cầu thu hồi tài sản</h2>
+    
+    <p>Xin chào,</p>
+    
+    <p>Nhân viên <strong>${object.name}</strong> đang chuẩn bị nghỉ việc/chuyển công tác.</p>
+    
+    <p>Vui lòng tiến hành thu hồi các tài sản đang được giao cho nhân viên này:</p>
+    
+    <div style="background-color: #ebf5fb; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
+        <h4 style="margin-top: 0;">Thông tin nhân viên:</h4>
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Họ tên:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Phòng ban:</strong></td>
+                <td style="padding: 5px;">${object.department_id.name if object.department_id else 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Số tài sản cần thu hồi:</strong></td>
+                <td style="padding: 5px;"><strong>${object.pending_asset_return_count}</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <p><strong>Các bước cần thực hiện:</strong></p>
+    <ol>
+        <li>Liên hệ với nhân viên để lên lịch thu hồi</li>
+        <li>Kiểm tra tình trạng tài sản khi nhận lại</li>
+        <li>Cập nhật trạng thái trên hệ thống</li>
+        <li>Hoàn tất biên bản bàn giao</li>
+    </ol>
+    
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=hr.employee&amp;view_type=form" 
+           style="background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem chi tiết nhân viên
+        </a>
+    </p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email thông báo tự động từ hệ thống quản lý tài sản.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Missing Asset Alert -->
+        <record id="email_template_missing_asset" model="mail.template">
+            <field name="name">Asset: Missing Alert</field>
+            <field name="model_id" ref="model_dnu_asset"/>
+            <field name="subject">🔴 CẢNH BÁO: Tài sản mất - ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #c0392b;">🔴 CẢNH BÁO: TÀI SẢN ĐƯỢC ĐÁNH DẤU MẤT</h2>
+    
+    <p>Xin chào,</p>
+    
+    <p>Tài sản sau đây đã được đánh dấu là <strong style="color: #c0392b;">MẤT</strong> sau nhiều đợt kiểm kê không tìm thấy:</p>
+    
+    <div style="background-color: #fdedec; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #c0392b;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Tên tài sản:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Mã tài sản:</strong></td>
+                <td style="padding: 5px;">${object.code}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Giá trị:</strong></td>
+                <td style="padding: 5px;">${'{:,.0f}'.format(object.purchase_value or 0)} VNĐ</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Người được gán cuối:</strong></td>
+                <td style="padding: 5px;">${object.assigned_to.name if object.assigned_to else 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Vị trí cuối:</strong></td>
+                <td style="padding: 5px;">${object.location or 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Số đợt kiểm kê không thấy:</strong></td>
+                <td style="padding: 5px; color: #c0392b;"><strong>${object.missing_inventory_count}</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <p><strong>Yêu cầu:</strong></p>
+    <ul>
+        <li>Tiến hành điều tra tìm kiếm tài sản</li>
+        <li>Liên hệ với người được gán cuối cùng</li>
+        <li>Kiểm tra các vị trí có thể</li>
+        <li>Lập biên bản nếu xác nhận mất</li>
+    </ul>
+    
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.asset&amp;view_type=form" 
+           style="background-color: #c0392b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem và xử lý
+        </a>
+    </p>
+    
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email cảnh báo tự động từ hệ thống quản lý tài sản.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- ==================== ASSET HANDOVER EMAIL TEMPLATES ==================== -->
+
+        <record id="email_template_handover_signature" model="mail.template">
+            <field name="name">Asset Handover: Signature Request</field>
+            <field name="model_id" ref="model_dnu_asset_handover"/>
+            <field name="subject">🖊️ Yêu cầu ký biên bản bàn giao: ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object._get_notification_email_to('pending_signature')|safe}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #3498db;">🖊️ Yêu cầu ký biên bản bàn giao tài sản</h2>
+
+    <p>Xin chào,</p>
+
+    <p>Biên bản bàn giao sau đây đang ở trạng thái <strong>Chờ ký</strong> và cần bạn ký xác nhận:</p>
+
+    <div style="background-color: #ebf5fb; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Số biên bản:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Loại biên bản:</strong></td>
+                <td style="padding: 5px;">${dict(object._fields['handover_type'].selection).get(object.handover_type)}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Tài sản:</strong></td>
+                <td style="padding: 5px;">${object.asset_name or (object.asset_id and object.asset_id.name) or ''}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Ngày bàn giao:</strong></td>
+                <td style="padding: 5px;">${format_datetime(object.handover_date, dt_format='dd/MM/yyyy HH:mm')}</td>
+            </tr>
+        </table>
+    </div>
+
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.asset.handover&amp;view_type=form"
+           style="background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Mở biên bản để ký
+        </a>
+    </p>
+
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <record id="email_template_handover_signed" model="mail.template">
+            <field name="name">Asset Handover: Signed</field>
+            <field name="model_id" ref="model_dnu_asset_handover"/>
+            <field name="subject">✅ Biên bản đã ký: ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object._get_notification_email_to('signed')|safe}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #27ae60;">✅ Biên bản bàn giao đã ký</h2>
+
+    <p>Xin chào,</p>
+
+    <p>Biên bản bàn giao <strong>${object.name}</strong> đã được ký đầy đủ.</p>
+
+    <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #27ae60;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Tài sản:</strong></td>
+                <td style="padding: 5px;">${object.asset_name or (object.asset_id and object.asset_id.name) or ''}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Người nhận:</strong></td>
+                <td style="padding: 5px;">${object.nhan_vien_id and object.nhan_vien_id.ho_va_ten or ''}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Người giao:</strong></td>
+                <td style="padding: 5px;">${object.deliverer_id and object.deliverer_id.ho_va_ten or ''}</td>
+            </tr>
+        </table>
+    </div>
+
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.asset.handover&amp;view_type=form"
+           style="background-color: #27ae60; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem biên bản
+        </a>
+    </p>
+
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <record id="email_template_handover_completed" model="mail.template">
+            <field name="name">Asset Handover: Completed</field>
+            <field name="model_id" ref="model_dnu_asset_handover"/>
+            <field name="subject">🏁 Biên bản đã hoàn thành: ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object._get_notification_email_to('completed')|safe}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #8e44ad;">🏁 Biên bản bàn giao đã hoàn thành</h2>
+
+    <p>Xin chào,</p>
+
+    <p>Biên bản bàn giao <strong>${object.name}</strong> đã chuyển sang trạng thái <strong>Hoàn thành</strong>.</p>
+
+    <div style="background-color: #f5eef8; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #8e44ad;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Tài sản:</strong></td>
+                <td style="padding: 5px;">${object.asset_name or (object.asset_id and object.asset_id.name) or ''}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Đơn vị:</strong></td>
+                <td style="padding: 5px;">${object.don_vi_id and object.don_vi_id.ten_don_vi or ''}</td>
+            </tr>
+            % if object.van_ban_id:
+            <tr>
+                <td style="padding: 5px;"><strong>Văn bản đi:</strong></td>
+                <td style="padding: 5px;">${object.van_ban_id.so_van_ban_di or ''} - ${object.van_ban_id.ten_van_ban or ''}</td>
+            </tr>
+            % endif
+        </table>
+    </div>
+
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.asset.handover&amp;view_type=form"
+           style="background-color: #8e44ad; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem biên bản
+        </a>
+    </p>
+
+    <p style="color: #7f8c8d; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- ==================== MEETING BOOKING EMAIL TEMPLATES ==================== -->
+        
+        <!-- Email Template: Meeting Reminder -->
+        <record id="email_template_meeting_reminder" model="mail.template">
+            <field name="name">Meeting Booking: Reminder</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="subject">⏰ Nhắc lịch họp: ${object.subject} - ${format_datetime(object.start_datetime, dt_format='HH:mm')}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.organizer_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; background-color: #fffbea;">
+    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h2 style="color: white; margin: 0;">⏰ NHẮC LỊCH HỌP</h2>
+        <p style="color: white; margin: 5px 0 0 0; font-size: 14px;">Cuộc họp của bạn sắp diễn ra!</p>
+    </div>
+    
+    <div style="background: white; padding: 20px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <p style="font-size: 16px; margin-bottom: 20px;">Xin chào <strong>${object.organizer_id.name}</strong>,</p>
+        
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <h3 style="margin: 0; font-size: 18px;">${object.subject}</h3>
+            <p style="margin: 10px 0 0 0; font-size: 24px; font-weight: bold;">
+                ${format_datetime(object.start_datetime, dt_format='HH:mm')} - ${format_datetime(object.end_datetime, dt_format='HH:mm')}
+            </p>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">
+                📅 ${format_datetime(object.start_datetime, dt_format='dd/MM/yyyy (EEE)')}
+            </p>
+        </div>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="padding: 8px; width: 30%;"><strong>📍 Địa điểm:</strong></td>
+                    <td style="padding: 8px;">${object.room_id.name}
+                        % if object.room_id.location:
+                        - ${object.room_id.location}
+                        % endif
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>👥 Số người:</strong></td>
+                    <td style="padding: 8px;">${object.num_attendees} người</td>
+                </tr>
+                % if object.meeting_type == 'online':
+                <tr>
+                    <td style="padding: 8px;"><strong>💻 Loại:</strong></td>
+                    <td style="padding: 8px;"><span style="background: #10b981; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">ONLINE</span></td>
+                </tr>
+                % endif
+            </table>
+        </div>
+        
+        % if object.zoom_join_url:
+        <div style="background: linear-gradient(135deg, #2684FF 0%, #0747A6 100%); padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <p style="color: white; margin: 0 0 10px 0; font-size: 14px;">🔗 Link họp Zoom</p>
+            <a href="${object.zoom_join_url}" 
+               style="background-color: white; color: #0747A6; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold; font-size: 16px;">
+                Tham gia họp ngay
+            </a>
+            % if object.zoom_password:
+            <p style="color: white; margin: 10px 0 0 0; font-size: 13px;">🔑 Password: <strong>${object.zoom_password}</strong></p>
+            % endif
+        </div>
+        % endif
+        
+        % if object.google_calendar_link:
+        <p style="text-align: center; margin: 15px 0;">
+            <a href="${object.google_calendar_link}" style="color: #27ae60; text-decoration: none;">
+                📅 Xem trong Google Calendar
+            </a>
+        </p>
+        % endif
+        
+        % if object.description:
+        <div style="border-left: 4px solid #667eea; padding-left: 15px; margin: 20px 0;">
+            <strong>📝 Nội dung cuộc họp:</strong>
+            <p style="margin: 5px 0;">${object.description}</p>
+        </div>
+        % endif
+        
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 20px 0; border-radius: 4px;">
+            <strong style="color: #d97706;">⚠️ Lưu ý:</strong>
+            <p style="margin: 5px 0; color: #92400e;">Vui lòng chuẩn bị và tham gia đúng giờ. Nếu không thể tham dự, vui lòng thông báo sớm.</p>
+        </div>
+        
+        <p style="text-align: center; margin-top: 25px;">
+            <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.meeting.booking&amp;view_type=form" 
+               style="background-color: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
+                Xem chi tiết đầy đủ
+            </a>
+        </p>
+    </div>
+    
+    <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px;">
+        Đây là email nhắc lịch tự động. Email này được gửi 30 phút trước giờ họp.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Meeting Update Notification -->
+        <record id="email_template_meeting_update" model="mail.template">
+            <field name="name">Meeting Booking: Update Notification</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="subject">🔄 Cập nhật lịch họp: ${object.subject}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.organizer_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h2 style="color: white; margin: 0;">🔄 LỊCH HỌP CÓ THAY ĐỔI</h2>
+    </div>
+    
+    <div style="background: white; padding: 20px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <p>Xin chào <strong>${object.organizer_id.name}</strong>,</p>
+        
+        <p>Lịch họp sau đây <strong style="color: #f59e0b;">đã được cập nhật</strong>. Vui lòng kiểm tra thông tin mới:</p>
+        
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+            <strong style="color: #d97706;">⚠️ ĐÃ CÓ THAY ĐỔI - VUI LÒNG XEM KỸ THÔNG TIN BÊN DƯỚI</strong>
+        </div>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="padding: 8px;"><strong>Mã đặt phòng:</strong></td>
+                    <td style="padding: 8px;">${object.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>Chủ đề:</strong></td>
+                    <td style="padding: 8px;">${object.subject}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>Thời gian:</strong></td>
+                    <td style="padding: 8px;">
+                        ${format_datetime(object.start_datetime, dt_format='dd/MM/yyyy HH:mm')} - 
+                        ${format_datetime(object.end_datetime, dt_format='HH:mm')}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>Phòng họp:</strong></td>
+                    <td style="padding: 8px;">${object.room_id.name}
+                        % if object.room_id.location:
+                        - ${object.room_id.location}
+                        % endif
+                    </td>
+                </tr>
+                % if object.meeting_type == 'online':
+                <tr>
+                    <td style="padding: 8px;"><strong>Loại cuộc họp:</strong></td>
+                    <td style="padding: 8px;"><span style="background: #10b981; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">ONLINE</span></td>
+                </tr>
+                % endif
+            </table>
+        </div>
+        
+        % if object.zoom_join_url:
+        <div style="background-color: #dbeafe; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <strong>🔗 Link họp Zoom:</strong><br/>
+            <a href="${object.zoom_join_url}" style="color: #2563eb; word-break: break-all;">${object.zoom_join_url}</a>
+            % if object.zoom_password:
+            <p style="margin: 5px 0 0 0;"><strong>🔑 Password:</strong> ${object.zoom_password}</p>
+            % endif
+        </div>
+        % endif
+        
+        % if object.google_calendar_link:
+        <p style="text-align: center; margin: 15px 0;">
+            <a href="${object.google_calendar_link}" 
+               style="background-color: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                📅 Cập nhật trong Google Calendar
+            </a>
+        </p>
+        % endif
+        
+        % if object.description:
+        <div style="margin: 20px 0;">
+            <strong>📝 Mô tả:</strong>
+            <p style="margin: 5px 0;">${object.description}</p>
+        </div>
+        % endif
+        
+        % if object.attendee_ids:
+        <div style="margin: 20px 0;">
+            <strong>👥 Người tham dự:</strong>
+            <ul style="margin-top: 5px;">
+                % for attendee in object.attendee_ids:
+                <li>${attendee.name}</li>
+                % endfor
+            </ul>
+        </div>
+        % endif
+        
+        <p style="text-align: center; margin-top: 25px;">
+            <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.meeting.booking&amp;view_type=form" 
+               style="background-color: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
+                Xem chi tiết
+            </a>
+        </p>
+    </div>
+    
+    <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px;">
+        Email thông báo tự động khi có thay đổi lịch họp.
     </p>
 </div>
             </field>

@@ -1,0 +1,245 @@
+/* ====================================== */
+/* ASSET CENTER - MODERN THEME           */
+/* Colors: Orange (#E67E22) & Blue (#2980B9) */
+/* ====================================== */
+
+/* Global Styles */
+.o_asset_center_theme {
+    --primary-orange: #E67E22;
+    --primary-orange-dark: #D35400;
+    --primary-blue: #2980B9;
+    --primary-blue-dark: #1F618D;
+    --success-green: #27AE60;
+    --warning-red: #E74C3C;
+    --secondary-gray: #7F8C8D;
+    --light-gray: #ECF0F1;
+}
+
+/* Button Gradients */
+.btn-primary.o_asset_orange {
+    background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-dark) 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary.o_asset_orange:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.4);
+}
+
+.btn-primary.o_asset_blue {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary.o_asset_blue:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(41, 128, 185, 0.4);
+}
+
+/* Modern Badges */
+.badge.o_asset_badge_orange {
+    background: var(--primary-orange);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge.o_asset_badge_blue {
+    background: var(--primary-blue);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Card Shadows */
+.o_asset_card_modern {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: none;
+    overflow: hidden;
+}
+
+.o_asset_card_modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Stat Buttons - Orange Theme */
+.oe_stat_button.o_stat_orange {
+    background: linear-gradient(135deg, rgba(230, 126, 34, 0.1) 0%, rgba(211, 84, 0, 0.1) 100%);
+    border-left: 3px solid var(--primary-orange);
+}
+
+.oe_stat_button.o_stat_orange:hover {
+    background: linear-gradient(135deg, rgba(230, 126, 34, 0.2) 0%, rgba(211, 84, 0, 0.2) 100%);
+}
+
+/* Stat Buttons - Blue Theme */
+.oe_stat_button.o_stat_blue {
+    background: linear-gradient(135deg, rgba(41, 128, 185, 0.1) 0%, rgba(31, 97, 141, 0.1) 100%);
+    border-left: 3px solid var(--primary-blue);
+}
+
+.oe_stat_button.o_stat_blue:hover {
+    background: linear-gradient(135deg, rgba(41, 128, 185, 0.2) 0%, rgba(31, 97, 141, 0.2) 100%);
+}
+
+/* Modern Icons */
+.o_asset_icon_orange {
+    color: var(--primary-orange);
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.o_asset_icon_blue {
+    color: var(--primary-blue);
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+/* Status Labels with modern design */
+.o_status_label {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.o_status_label.available {
+    background: var(--success-green);
+    color: white;
+}
+
+.o_status_label.assigned {
+    background: var(--primary-blue);
+    color: white;
+}
+
+.o_status_label.on_loan {
+    background: #3498DB;
+    color: white;
+}
+
+.o_status_label.maintenance {
+    background: var(--primary-orange);
+    color: white;
+}
+
+.o_status_label.overdue {
+    background: var(--warning-red);
+    color: white;
+}
+
+/* Searchpanel styling */
+.o_search_panel .o_search_panel_category_value {
+    transition: all 0.2s ease;
+}
+
+.o_search_panel .o_search_panel_category_value:hover {
+    background: rgba(230, 126, 34, 0.1);
+    border-left: 3px solid var(--primary-orange);
+}
+
+.o_search_panel .o_search_panel_category_value.active {
+    background: linear-gradient(90deg, rgba(230, 126, 34, 0.15) 0%, transparent 100%);
+    border-left: 3px solid var(--primary-orange);
+    font-weight: 600;
+}
+
+/* Progress bars */
+.o_asset_progress {
+    height: 8px;
+    border-radius: 10px;
+    background: var(--light-gray);
+    overflow: hidden;
+}
+
+.o_asset_progress_bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-orange) 0%, var(--primary-orange-dark) 100%);
+    transition: width 0.3s ease;
+}
+
+/* Form headers with gradient */
+.o_form_sheet_bg .oe_title h1 {
+    background: linear-gradient(90deg, var(--primary-orange) 0%, var(--primary-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Kanban column headers */
+.o_kanban_group_title {
+    background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-dark) 100%);
+    color: white;
+    padding: 12px 15px;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+}
+
+/* Notebook tabs styling */
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--secondary-gray);
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--primary-orange);
+    border-bottom-color: var(--primary-orange);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-orange);
+    border-bottom-color: var(--primary-orange);
+    background: transparent;
+}
+
+/* Alert boxes */
+.alert.o_asset_alert_warning {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(192, 57, 43, 0.1) 100%);
+    border-left: 4px solid var(--warning-red);
+    color: var(--warning-red);
+}
+
+.alert.o_asset_alert_info {
+    background: linear-gradient(135deg, rgba(41, 128, 185, 0.1) 0%, rgba(31, 97, 141, 0.1) 100%);
+    border-left: 4px solid var(--primary-blue);
+    color: var(--primary-blue);
+}
+
+/* Modern table rows */
+.o_list_view tr:hover {
+    background: rgba(230, 126, 34, 0.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .o_asset_card_modern {
+        margin-bottom: 15px;
+    }
+    
+    .oe_stat_button {
+        margin-bottom: 10px;
+    }
+}

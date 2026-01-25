@@ -7,12 +7,19 @@
             <field name="arch" type="xml">
                 <form>
                     <sheet>
-                        <div class="oe_read_only" style="font-size:25px">Văn bản đến</div>
+                        <div class="oe_read_only" style="font-size:25px">Văn bản đi</div>
                         <group col="4" string="Thông tin chung">
                             <field name="ten_van_ban"/>
                             <field name="so_van_ban_di"/>
                             <field name="so_hieu_van_ban"/>
                             <field name="noi_nhan"/>
+                            <field name="handler_employee_id"/>
+                            <field name="signer_employee_id"/>
+                            <field name="department_id"/>
+                            <field name="receiver_employee_ids" widget="many2many_tags"/>
+                            <field name="is_asset_document" invisible="1"/>
+                            <field name="source_model" invisible="1"/>
+                            <field name="source_res_id" invisible="1"/>
                         </group>
                     </sheet>
                     
@@ -29,6 +36,10 @@
                     <field name="so_van_ban_di"/>
                     <field name="so_hieu_van_ban"/>
                     <field name="noi_nhan"/>
+                    <field name="signer_employee_id" string="Người ký"/>
+                    <field name="handler_employee_id" string="Cán bộ xử lý"/>
+                    <field name="department_id" string="Phòng/Ban"/>
+                    <field name="is_asset_document" invisible="1"/>
                 </tree>
             </field>
         </record>
@@ -41,15 +52,25 @@
                     <field name="so_van_ban_di"/>
                     <field name="so_hieu_van_ban"/>
                     <field name="noi_nhan"/>
+                    <filter name="filter_asset_docs" string="Biên bản tài sản" domain="[('is_asset_document', '=', True)]"/>
                 </search>
             </field>
         </record>
 
         <record id="action_van_ban_di" model="ir.actions.act_window">
-            <field name="name">Văn bản đến</field>
+            <field name="name">Văn bản đi</field>
             <field name="res_model">van_ban_di</field>
             <field name="view_mode">tree,form</field>
             <field name="search_view_id" ref = "van_ban_di_search"/>
+        </record>
+
+        <record id="action_van_ban_noi_bo_tai_san" model="ir.actions.act_window">
+            <field name="name">Biên bản tài sản</field>
+            <field name="res_model">van_ban_di</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="van_ban_di_search"/>
+            <field name="domain">[("is_asset_document", "=", True)]</field>
+            <field name="context">{"search_default_filter_asset_docs": 1}</field>
         </record>
     </data>
 </odoo>

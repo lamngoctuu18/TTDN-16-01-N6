@@ -1,0 +1,77 @@
+/* Event Meeting Room Styles */
+
+/* Community Page */
+.o_wevent_community .card {
+    transition: all 0.3s ease;
+}
+
+.o_wevent_community .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.o_wevent_community .progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.o_wevent_community .progress-bar {
+    background: linear-gradient(90deg, #28a745 0%, #ffc107 70%, #dc3545 100%);
+    transition: width 0.5s ease;
+}
+
+/* Meeting Room Page */
+.o_wevent_meeting_room #jitsi_meet {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+}
+
+.o_wevent_meeting_room .sidebar-room-item {
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.o_wevent_meeting_room .sidebar-room-item:hover {
+    border-left-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+/* Badges */
+.badge-info {
+    background-color: #17a2b8;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .o_wevent_community .col-md-6 {
+        margin-bottom: 1rem;
+    }
+    
+    .o_wevent_meeting_room #jitsi_meet {
+        height: 400px;
+    }
+}
+
+/* Loading state */
+#jitsi_meet.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#jitsi_meet.loading::after {
+    content: "Loading meeting room...";
+    color: #fff;
+    font-size: 18px;
+}

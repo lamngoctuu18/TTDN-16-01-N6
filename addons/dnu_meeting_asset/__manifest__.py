@@ -76,10 +76,15 @@ Phát triển bởi: Nhóm Sinh viên FIT-DNU
     'website': "https://ttdn1501.aiotlabdnu.xyz/web",
 
     'category': 'Operations/Facility',
-    'version': '1.0.0',
+    'version': '1.1.0',
 
     # Dependencies
-    'depends': ['base', 'hr', 'nhan_su', 'calendar', 'mail'],
+    'depends': ['base', 'hr', 'nhan_su', 'calendar', 'mail', 'board', 'quan_ly_van_ban'],
+
+    # External dependencies
+    'external_dependencies': {
+        'python': ['requests'],
+    },
 
     # Data files
     'data': [
@@ -90,8 +95,11 @@ Phát triển bởi: Nhóm Sinh viên FIT-DNU
         # Data
         'data/res_users_data.xml',
         'data/sequence_data.xml',
+        'data/disposal_rule_data.xml',
         'data/mail_template.xml',
         'data/cron.xml',
+        'data/integration_data.xml',
+        'data/openai_data.xml',
         
         # Wizards
         'wizards/wizard_views.xml',
@@ -102,25 +110,42 @@ Phát triển bởi: Nhóm Sinh viên FIT-DNU
         'views/dnu_asset_assignment_views.xml',
         'views/dnu_asset_maintenance_views.xml',
         'views/dnu_asset_lending_views.xml',
+        'views/dnu_asset_handover_views.xml',  # Biên bản bàn giao
+        'views/dnu_asset_center_views.xml',  # Asset Center Dashboard
         'views/dnu_maintenance_schedule_views.xml',
         'views/dnu_asset_depreciation_views.xml',
         'views/dnu_asset_inventory_views.xml',
         'views/dnu_asset_transfer_views.xml',
         'views/dnu_asset_disposal_views.xml',
+        'views/dnu_asset_disposal_rule_views.xml',
         
         # Views - Meeting
         'views/dnu_meeting_room_views.xml',
         'views/dnu_meeting_booking_views.xml',
+
+        # Views - Văn bản đến (integration)
+        'views/van_ban_den_inherit_views.xml',
+
+        # Views - User guide
+        'views/user_guide_views.xml',
+        
+        # Views - Integrations
+        'views/integration_views.xml',
+        'views/oauth_templates.xml',
+        'views/openai_views.xml',
+        'views/ai_integration_views.xml',
         
         # Views - HR Integration
         'views/hr_employee_views.xml',
+        
+        # Views - Automation
+        'views/dnu_asset_automation_views.xml',
         
         # Reports (actions used by menus)
         'reports/asset_reports.xml',
         'reports/booking_reports.xml',
 
         # Views - Dashboard
-        'views/dashboard_views.xml',
         'views/dnu_asset_dashboard_views.xml',
         
         # Menu

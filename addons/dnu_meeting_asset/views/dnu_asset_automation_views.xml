@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ====== AUTOMATION VIEWS ====== -->
+
+    <!-- Extend Asset Lending Form - Add escalation fields -->
+    <record id="view_dnu_asset_lending_form_automation" model="ir.ui.view">
+        <field name="name">dnu.asset.lending.form.automation</field>
+        <field name="model">dnu.asset.lending</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_asset_lending_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('alert-danger')]" position="after">
+                <div class="alert alert-warning" role="alert" attrs="{'invisible': [('requires_approval', '=', False)]}">
+                    <strong><i class="fa fa-warning"/> Cần phê duyệt đặc biệt:</strong>
+                    <field name="approval_note" nolabel="1" readonly="1"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='is_overdue']" position="after">
+                <field name="requires_approval" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='returned_to']" position="after">
+                <group string="Theo dõi quá hạn" attrs="{'invisible': [('state', 'not in', ['borrowed', 'overdue'])]}">
+                    <field name="overdue_days"/>
+                    <field name="escalation_level" widget="badge"
+                           decoration-warning="escalation_level == '1'"
+                           decoration-danger="escalation_level in ('2', '3')"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Asset Lending Tree - Show escalation level -->
+    <record id="view_dnu_asset_lending_tree_automation" model="ir.ui.view">
+        <field name="name">dnu.asset.lending.tree.automation</field>
+        <field name="model">dnu.asset.lending</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_asset_lending_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="overdue_days" optional="show"/>
+                <field name="escalation_level" optional="show" widget="badge"
+                       decoration-warning="escalation_level == '1'"
+                       decoration-danger="escalation_level in ('2', '3')"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Asset Form - Add warranty/inspection fields -->
+    <record id="view_dnu_asset_form_automation" model="ir.ui.view">
+        <field name="name">dnu.asset.form.automation</field>
+        <field name="model">dnu.asset</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_asset_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='warranty_expiry']" position="after">
+                <field name="warranty_status" widget="badge" 
+                       decoration-success="warranty_status == 'valid'"
+                       decoration-warning="warranty_status == 'expiring_soon'"
+                       decoration-danger="warranty_status == 'expired'"/>
+            </xpath>
+            <xpath expr="//notebook/page[last()]" position="after">
+                <page string="Kiểm định &amp; Hợp đồng" name="inspection">
+                    <group>
+                        <group>
+                            <field name="inspection_date"/>
+                            <field name="maintenance_contract_expiry"/>
+                        </group>
+                        <group string="Trạng thái đặc biệt">
+                            <field name="is_missing"/>
+                            <field name="missing_since" attrs="{'invisible': [('is_missing', '=', False)]}"/>
+                            <field name="missing_inventory_count" attrs="{'invisible': [('is_missing', '=', False)]}"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Asset Tree - Show missing flag -->
+    <record id="view_dnu_asset_tree_automation" model="ir.ui.view">
+        <field name="name">dnu.asset.tree.automation</field>
+        <field name="model">dnu.asset</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_asset_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="warranty_status" optional="hide" widget="badge"
+                       decoration-success="warranty_status == 'valid'"
+                       decoration-warning="warranty_status == 'expiring_soon'"
+                       decoration-danger="warranty_status == 'expired'"/>
+                <field name="is_missing" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Maintenance Schedule Form - Add automation fields -->
+    <record id="view_dnu_maintenance_schedule_form_automation" model="ir.ui.view">
+        <field name="name">dnu.maintenance.schedule.form.automation</field>
+        <field name="model">dnu.maintenance.schedule</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_maintenance_schedule_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='send_reminder']" position="after">
+                <field name="auto_assign"/>
+                <field name="notify_before_days"/>
+                <field name="last_generated_date" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend HR Employee Form - Add asset return status -->
+    <record id="view_hr_employee_form_asset_automation" model="ir.ui.view">
+        <field name="name">hr.employee.form.asset.automation</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_employee_form_asset_integration"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_view_assets']" position="after">
+                <button class="oe_stat_button" type="object" name="action_view_pending_returns" 
+                        icon="fa-arrow-left" 
+                        attrs="{'invisible': [('pending_asset_return_count', '=', 0)]}">
+                    <field name="pending_asset_return_count" widget="statinfo" string="Chờ thu hồi"/>
+                </button>
+            </xpath>
+            <xpath expr="//page[@name='assets_meetings']" position="inside">
+                <group string="Trạng thái thu hồi tài sản" attrs="{'invisible': [('asset_return_status', '=', 'not_required')]}">
+                    <field name="asset_return_status" widget="badge"
+                           decoration-muted="asset_return_status == 'not_required'"
+                           decoration-warning="asset_return_status == 'pending'"
+                           decoration-info="asset_return_status == 'in_progress'"
+                           decoration-success="asset_return_status == 'completed'"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Asset Inventory Form - Show auto generated flag -->
+    <record id="view_dnu_asset_inventory_form_automation" model="ir.ui.view">
+        <field name="name">dnu.asset.inventory.form.automation</field>
+        <field name="model">dnu.asset.inventory</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_asset_inventory_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='inventory_type']" position="after">
+                <field name="is_auto_generated" readonly="1" 
+                       attrs="{'invisible': [('is_auto_generated', '=', False)]}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Asset Transfer Form - Add auto handover flag -->
+    <record id="view_dnu_asset_transfer_form_automation" model="ir.ui.view">
+        <field name="name">dnu.asset.transfer.form.automation</field>
+        <field name="model">dnu.asset.transfer</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_asset_transfer_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='notes']" position="before">
+                <field name="auto_generate_handover"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ====== SEARCH FILTERS FOR AUTOMATION ====== -->
+
+    <!-- Extend Asset Lending Search - Add escalation filters -->
+    <record id="view_dnu_asset_lending_search_automation" model="ir.ui.view">
+        <field name="name">dnu.asset.lending.search.automation</field>
+        <field name="model">dnu.asset.lending</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_asset_lending_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='overdue']" position="after">
+                <separator/>
+                <filter string="Escalation Cấp 1" name="escalation_1" domain="[('escalation_level', '=', '1')]"/>
+                <filter string="Escalation Cấp 2" name="escalation_2" domain="[('escalation_level', '=', '2')]"/>
+                <filter string="Escalation Cấp 3" name="escalation_3" domain="[('escalation_level', '=', '3')]"/>
+                <separator/>
+                <filter string="Cần phê duyệt đặc biệt" name="requires_approval" domain="[('requires_approval', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Asset Search - Add warranty/missing filters -->
+    <record id="view_dnu_asset_search_automation" model="ir.ui.view">
+        <field name="name">dnu.asset.search.automation</field>
+        <field name="model">dnu.asset</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_asset_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='maintenance']" position="after">
+                <separator/>
+                <filter string="Bảo hành còn hiệu lực" name="warranty_valid" domain="[('warranty_status', '=', 'valid')]"/>
+                <filter string="Bảo hành sắp hết" name="warranty_expiring" domain="[('warranty_status', '=', 'expiring_soon')]"/>
+                <filter string="Hết bảo hành" name="warranty_expired" domain="[('warranty_status', '=', 'expired')]"/>
+                <separator/>
+                <filter string="Đánh dấu mất" name="missing" domain="[('is_missing', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ====== DASHBOARD ACTION FOR AUTOMATION ====== -->
+
+    <!-- Action: Overdue Lendings Dashboard -->
+    <record id="action_overdue_lendings_dashboard" model="ir.actions.act_window">
+        <field name="name">Phiếu mượn quá hạn</field>
+        <field name="res_model">dnu.asset.lending</field>
+        <field name="view_mode">tree,form,kanban</field>
+        <field name="domain">[('state', '=', 'overdue')]</field>
+        <field name="context">{'search_default_group_by_escalation': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Không có phiếu mượn nào quá hạn!
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Assets Expiring Warranty -->
+    <record id="action_assets_warranty_expiring" model="ir.actions.act_window">
+        <field name="name">Tài sản sắp hết bảo hành</field>
+        <field name="res_model">dnu.asset</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('warranty_status', '=', 'expiring_soon')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Không có tài sản nào sắp hết bảo hành!
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Missing Assets -->
+    <record id="action_missing_assets" model="ir.actions.act_window">
+        <field name="name">Tài sản mất</field>
+        <field name="res_model">dnu.asset</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('is_missing', '=', True)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Không có tài sản nào được đánh dấu mất!
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Pending Asset Returns -->
+    <record id="action_pending_asset_returns" model="ir.actions.act_window">
+        <field name="name">Chờ thu hồi tài sản</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('asset_return_status', 'in', ['pending', 'in_progress'])]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Không có nhân viên nào cần thu hồi tài sản!
+            </p>
+        </field>
+    </record>
+
+</odoo>

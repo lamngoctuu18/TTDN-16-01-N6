@@ -54,7 +54,7 @@ class AssetDepreciation(models.Model):
         string='Giá trị khấu hao (mỗi kỳ)',
         compute='_compute_depreciation_value',
         store=True,
-        help='Giá trị khấu hao của một kỳ theo phương pháp đã chọn'
+        help='Giá trị khấu hao của một kỳ. Với phương pháp số dư giảm dần, giá trị thay đổi theo kỳ.'
     )
     current_value = fields.Float(
         string='Giá trị hiện tại',
@@ -142,14 +142,9 @@ class AssetDepreciation(models.Model):
                 # Phương pháp đường thẳng: GT_TL = 0
                 self.salvage_value = 0.0
             elif self.method == 'declining':
-                # Phương pháp số dư giảm dần: Tính GT_TL từ công thức
-                # r = 1 - (GT_TL/NG)^(1/T) => GT_TL = NG * (1-r)^T
-                # Với tỷ lệ khấu hao mặc định, giả sử r = 2/T
-                if self.useful_life > 0:
-                    rate = 2.0 / self.useful_life  # Tỷ lệ khấu hao gấp đôi
-                    self.salvage_value = self.purchase_value * ((1 - rate) ** self.useful_life)
-                else:
-                    self.salvage_value = 0.0
+                # Phương pháp số dư giảm dần: khuyến nghị nhập GT_TL thủ công nếu có
+                # Mặc định GT_TL = 0 để tránh tính sai theo tháng/năm
+                self.salvage_value = 0.0
             else:
                 # Phương pháp thủ công: giữ nguyên hoặc set = 0
                 if not self.salvage_value:
@@ -171,13 +166,8 @@ class AssetDepreciation(models.Model):
             if record.method == 'linear':
                 record.depreciation_value = record.depreciation_total / record.useful_life
             elif record.method == 'declining':
-                if record.salvage_value > 0:
-                    ratio = record.salvage_value / record.purchase_value
-                    monthly_rate = 1 - pow(ratio, 1.0 / record.useful_life)
-                else:
-                    years = record.useful_life / 12.0
-                    monthly_rate = 2.0 / years / 12
-                record.depreciation_value = record.purchase_value * monthly_rate
+                # Số dư giảm dần: giá trị khấu hao thay đổi theo kỳ
+                record.depreciation_value = 0.0
             else:
                 record.depreciation_value = 0.0
 
@@ -189,10 +179,12 @@ class AssetDepreciation(models.Model):
                 remaining = record.salvage_value
             record.current_value = remaining
 
-    @api.depends('start_date', 'useful_life')
+    @api.depends('start_date', 'useful_life', 'depreciation_line_ids.date')
     def _compute_end_date(self):
         for record in self:
-            if record.start_date and record.useful_life:
+            if record.depreciation_line_ids:
+                record.end_date = max(record.depreciation_line_ids.mapped('date'))
+            elif record.start_date and record.useful_life:
                 record.end_date = record.start_date + relativedelta(months=record.useful_life)
             else:
                 record.end_date = False
@@ -211,8 +203,8 @@ class AssetDepreciation(models.Model):
                 record.depreciation_rate = 0.0
                 continue
 
-            # Tỷ lệ kỳ = KH kỳ / NG
-            record.depreciation_rate = (record.depreciation_value / record.purchase_value) * 100 if record.depreciation_value else 0.0
+            # Tỷ lệ kỳ = KH kỳ / NG (widget percentage yêu cầu giá trị 0..1)
+            record.depreciation_rate = (record.depreciation_value / record.purchase_value) if record.depreciation_value else 0.0
 
     @api.constrains('purchase_value', 'salvage_value')
     def _check_values(self):
@@ -312,16 +304,22 @@ class AssetDepreciation(models.Model):
         
         DepreciationLine = self.env['dnu.asset.depreciation.line']
         
+        accumulated = 0.0
+
         for month in range(1, self.useful_life + 1):
-            # KH_LK,t = KH × t
-            accumulated = monthly_amount * month
+            if month == self.useful_life:
+                # Điều chỉnh kỳ cuối để khớp NG - GT_TL
+                monthly_amount = (self.depreciation_total - accumulated)
+
+            # KH_LK,t = KH_LK,t-1 + KH_t
+            accumulated += monthly_amount
             # GT_CL,t = NG - KH_LK,t
             remaining = self.purchase_value - accumulated
-            
+
             # Đảm bảo giá trị còn lại không nhỏ hơn giá trị thanh lý
             if remaining < self.salvage_value:
                 remaining = self.salvage_value
-            
+
             DepreciationLine.create({
                 'depreciation_id': self.id,
                 'date': date,
@@ -330,7 +328,7 @@ class AssetDepreciation(models.Model):
                 'book_value': remaining,
                 'state': 'draft',
             })
-            
+
             date = date + relativedelta(months=1)
 
     def _create_declining_depreciation_lines(self):
@@ -349,9 +347,10 @@ class AssetDepreciation(models.Model):
             ratio = self.salvage_value / self.purchase_value
             monthly_rate = 1 - pow(ratio, 1.0 / self.useful_life)
         else:
-            # Nếu giá trị thanh lý = 0, dùng phương pháp 2/n
+            # Nếu giá trị thanh lý = 0, dùng phương pháp 2/n (theo năm) rồi quy đổi theo tháng
             years = self.useful_life / 12.0
-            monthly_rate = 2.0 / years / 12
+            annual_rate = 2.0 / years if years else 0.0
+            monthly_rate = annual_rate / 12.0
         
         remaining_value = self.purchase_value  # GT_CL,0 = NG
         date = self.start_date
@@ -364,7 +363,7 @@ class AssetDepreciation(models.Model):
             monthly_amount = remaining_value * monthly_rate
             
             # Đảm bảo giá trị còn lại không nhỏ hơn giá trị thanh lý
-            if remaining_value - monthly_amount < self.salvage_value:
+            if remaining_value - monthly_amount < self.salvage_value or month == self.useful_life:
                 monthly_amount = remaining_value - self.salvage_value
             
             # Cập nhật giá trị lũy kế và còn lại

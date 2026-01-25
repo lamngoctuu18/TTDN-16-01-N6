@@ -2,3 +2,5 @@
 
 from . import quick_booking_wizard
 from . import asset_return_wizard
+from . import ai_wizard
+from . import signature_wizard

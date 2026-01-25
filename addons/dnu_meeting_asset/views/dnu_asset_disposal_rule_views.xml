@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_asset_disposal_rule_tree" model="ir.ui.view">
+        <field name="name">dnu.asset.disposal.rule.tree</field>
+        <field name="model">dnu.asset.disposal.rule</field>
+        <field name="arch" type="xml">
+            <tree string="Quy tắc đề xuất giá thanh lý" decoration-muted="active==False">
+                <field name="sequence"/>
+                <field name="name"/>
+                <field name="active"/>
+                <field name="disposal_type"/>
+                <field name="reason"/>
+                <field name="category_id"/>
+                <field name="coefficient_percent"/>
+                <field name="min_value" widget="monetary"/>
+                <field name="max_value" widget="monetary"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_asset_disposal_rule_form" model="ir.ui.view">
+        <field name="name">dnu.asset.disposal.rule.form</field>
+        <field name="model">dnu.asset.disposal.rule</field>
+        <field name="arch" type="xml">
+            <form string="Quy tắc đề xuất giá thanh lý">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="active"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="disposal_type"/>
+                            <field name="reason"/>
+                            <field name="category_id"/>
+                        </group>
+                    </group>
+                    <group string="Công thức">
+                        <group>
+                            <field name="coefficient_percent"/>
+                        </group>
+                        <group>
+                            <field name="min_value" widget="monetary"/>
+                            <field name="max_value" widget="monetary"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="Ghi chú..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_asset_disposal_rule" model="ir.actions.act_window">
+        <field name="name">Quy tắc giá thanh lý</field>
+        <field name="res_model">dnu.asset.disposal.rule</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{}</field>
+    </record>
+</odoo>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Asset Center Dashboard View -->
+        <record id="view_dnu_asset_center_form" model="ir.ui.view">
+            <field name="name">dnu.asset.center.form</field>
+            <field name="model">dnu.asset.center</field>
+            <field name="arch" type="xml">
+                <form string="Trung tâm quản lý tài sản" create="false" edit="false">
+                    <header>
+                        <button name="action_create_asset" string="Tạo tài sản" type="object" icon="fa-plus"/>
+                        <button name="action_create_lending" string="Tạo phiếu mượn" type="object" icon="fa-hand-paper-o"/>
+                        <button name="action_create_handover" string="Tạo biên bản" type="object" icon="fa-file-text-o"/>
+                        <button name="action_create_maintenance" string="Tạo bảo trì" type="object" icon="fa-wrench"/>
+                        <button name="action_create_schedule" string="Lập lịch định kỳ" type="object" icon="fa-calendar-plus-o"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <i class="fa fa-cubes"/> Trung tâm quản lý tài sản
+                            </h1>
+                        </div>
+
+                        <group string="Chỉ số tổng quan">
+                            <group>
+                                <field name="total_assets" readonly="1"/>
+                                <field name="available_count" readonly="1"/>
+                                <field name="assigned_count" readonly="1"/>
+                                <field name="borrowed_count" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="overdue_count" readonly="1"/>
+                                <field name="maintenance_count" readonly="1"/>
+                                <field name="pending_signature_count" readonly="1"/>
+                                <field name="upcoming_maintenance_count" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group string="Truy cập nhanh">
+                            <group>
+                                <button name="action_open_assets" string="Danh sách tài sản" type="object"/>
+                                <button name="action_open_categories" string="Danh mục tài sản" type="object"/>
+                                <button name="action_open_assignments" string="Lịch sử gán" type="object"/>
+                            </group>
+                            <group>
+                                <button name="action_open_lendings" string="Phiếu mượn" type="object"/>
+                                <button name="action_open_maintenance" string="Bảo trì" type="object"/>
+                                <button name="action_open_handovers" string="Biên bản bàn giao" type="object"/>
+                                <button name="action_open_schedules" string="Lịch bảo trì định kỳ" type="object"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
+        <record id="action_dnu_asset_center" model="ir.actions.act_window">
+            <field name="name">Trung tâm quản lý tài sản</field>
+            <field name="res_model">dnu.asset.center</field>
+            <field name="view_mode">form</field>
+            <field name="target">current</field>
+        </record>
+
+        <!-- Menu -->
+        <menuitem id="menu_dnu_asset_center"
+                  name="🏠 Trung tâm tài sản"
+                  parent="menu_dnu_main"
+                  action="action_dnu_asset_center"
+                  sequence="1"/>
+
+    </data>
+</odoo>

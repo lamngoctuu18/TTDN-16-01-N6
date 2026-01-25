@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Website Builder: Add Community Link to Event Page -->
+    <template id="event_page_community_link" inherit_id="website_event.event_description_full">
+        <xpath expr="//div[hasclass('col-lg-4')]" position="inside">
+            <t t-if="event.allow_community">
+                <div class="o_wevent_sidebar_block">
+                    <h6 class="o_wevent_sidebar_title">
+                        <i class="fa fa-comments"/> Cộng Đồng
+                    </h6>
+                    <p class="mb-2">
+                        Tham gia phòng họp ảo để thảo luận với các người tham gia khác.
+                    </p>
+                    <a t-att-href="'/event/%s/community' % event.id" class="btn btn-primary btn-block">
+                        <i class="fa fa-sign-in"/> Vào Cộng Đồng
+                    </a>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Website Builder Snippet: Room Creation Toggle -->
+    <template id="snippet_event_room_creation_options" inherit_id="website.snippet_options">
+        <xpath expr="." position="inside">
+            <div data-js="EventRoomCreation"
+                 data-selector=".s_event_community"
+                 data-drop-in=".oe_structure"
+                 data-drop-near="p, h1, h2, h3, blockquote, .well">
+                <we-checkbox string="Cho Phép Tạo Phòng"
+                            data-customize-website-variable="'allow_room_creation'"/>
+            </div>
+        </xpath>
+    </template>
+</odoo>

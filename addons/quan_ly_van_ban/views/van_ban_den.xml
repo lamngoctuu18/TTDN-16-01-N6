@@ -12,12 +12,24 @@
                             <button name="action_open_tasks" type="object" class="oe_stat_button" icon="fa-tasks">
                                 <field name="task_count" widget="statinfo" string="Công việc"/>
                             </button>
+                            <button name="action_open_source" type="object" class="oe_stat_button" icon="fa-external-link"
+                                    attrs="{'invisible': ['|', ('source_model', '=', False), ('source_res_id', '=', 0)]}">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Mở</span>
+                                    <span class="o_stat_text">Nghiệp vụ</span>
+                                </div>
+                            </button>
                         </div>
                         <group col="4" string="Thông tin chung">
                             <field name="ten_van_ban"/>
                             <field name="so_van_ban_den"/>
                             <field name="so_hieu_van_ban"/>
                             <field name="noi_gui_den"/>
+                        </group>
+                        <group col="4" string="Liên kết nghiệp vụ" attrs="{'invisible': [('source_model', '=', False)]}">
+                            <field name="source_model" readonly="1"/>
+                            <field name="source_res_id" readonly="1"/>
+                            <field name="is_asset_document" readonly="1"/>
                         </group>
                         <group col="4" string="Nhân sự liên quan">
                             <field name="handler_employee_id"/>
@@ -64,6 +76,7 @@
                     <field name="handler_employee_id"/>
                     <field name="signer_employee_id"/>
                     <field name="department_id"/>
+                    <field name="due_date" optional="hide"/>
                 </tree>
             </field>
         </record>
@@ -79,9 +92,12 @@
                     <field name="handler_employee_id"/>
                     <field name="signer_employee_id"/>
                     <field name="department_id"/>
+                    <field name="source_model"/>
                     <filter name="filter_handler" string="Theo cán bộ xử lý" domain="[('handler_employee_id', '!=', False)]"/>
                     <filter name="filter_signer" string="Theo người ký" domain="[('signer_employee_id', '!=', False)]"/>
                     <filter name="filter_department" string="Theo phòng/ban" domain="[('department_id', '!=', False)]"/>
+                    <separator/>
+                    <filter name="filter_asset" string="Tài sản / Phòng họp" domain="[('is_asset_document', '=', True)]"/>
                 </search>
             </field>
         </record>

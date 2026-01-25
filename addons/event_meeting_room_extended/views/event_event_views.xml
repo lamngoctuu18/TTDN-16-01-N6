@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Event Form - Add Meeting Rooms -->
+    <record id="view_event_form_meeting_rooms" model="ir.ui.view">
+        <field name="name">event.event.form.meeting.rooms</field>
+        <field name="model">event.event</field>
+        <field name="inherit_id" ref="event.view_event_form"/>
+        <field name="arch" type="xml">
+            <!-- Add button box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_meeting_rooms" type="object" class="oe_stat_button" icon="fa-comments" attrs="{'invisible': [('allow_community', '=', False)]}">
+                    <field name="active_room_count" widget="statinfo" string="Phòng Đang Hoạt Động"/>
+                </button>
+                <button name="action_view_room_statistics" type="object" class="oe_stat_button" icon="fa-bar-chart" attrs="{'invisible': [('allow_community', '=', False)]}" groups="event.group_event_manager">
+                    <field name="meeting_room_count" widget="statinfo" string="Tổng Phòng"/>
+                </button>
+            </xpath>
+            
+            <!-- Add community settings page -->
+            <xpath expr="//page[@name='event_notes']" position="after">
+                <page string="Cộng Đồng &amp; Phòng" name="community_rooms" attrs="{'invisible': [('allow_community', '=', False)]}">
+                    <group string="Cài Đặt Cộng Đồng">
+                        <field name="allow_community" invisible="1"/>
+                        <field name="allow_room_creation"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Event Kanban - Add community badge -->
+    <record id="view_event_kanban_community" model="ir.ui.view">
+        <field name="name">event.event.kanban.community</field>
+        <field name="model">event.event</field>
+        <field name="inherit_id" ref="event.view_event_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@class='o_kanban_record_bottom']" position="inside">
+                <field name="allow_community" invisible="1"/>
+                <span t-if="record.allow_community.raw_value" class="badge badge-info">
+                    <i class="fa fa-comments"/> Cộng Đồng
+                </span>
+            </xpath>
+        </field>
+    </record>
+</odoo>

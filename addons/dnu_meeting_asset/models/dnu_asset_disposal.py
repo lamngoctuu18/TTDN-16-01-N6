@@ -2,6 +2,7 @@
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
+from odoo.tools.float_utils import float_compare
 
 
 class AssetDisposal(models.Model):
@@ -9,6 +10,39 @@ class AssetDisposal(models.Model):
     _description = 'Thanh lý tài sản'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'date desc'
+
+    def _get_default_responsible(self):
+        """Tự động load nhân viên Kiểm kê thuộc phòng Bảo Trì"""
+        # Tìm phòng Bảo Trì
+        don_vi_bao_tri = self.env['don_vi'].search([
+            '|',
+            ('ten_don_vi', 'ilike', 'bảo trì'),
+            ('ten_don_vi', 'ilike', 'bảo tri')
+        ], limit=1)
+        
+        if not don_vi_bao_tri:
+            return self.env.user.employee_id
+        
+        # Tìm chức vụ Kiểm kê
+        chuc_vu_kiem_ke = self.env['chuc_vu'].search([
+            '|',
+            ('ten_chuc_vu', 'ilike', 'kiểm kê'),
+            ('ten_chuc_vu', 'ilike', 'kiem ke')
+        ], limit=1)
+        
+        if not chuc_vu_kiem_ke:
+            return self.env.user.employee_id
+        
+        # Tìm nhân viên có chức vụ Kiểm kê thuộc Bảo Trì
+        nhan_vien = self.env['nhan_vien'].search([
+            ('don_vi_chinh_id', '=', don_vi_bao_tri.id),
+            ('chuc_vu_chinh_id', '=', chuc_vu_kiem_ke.id)
+        ], limit=1)
+        
+        if nhan_vien and nhan_vien.hr_employee_id:
+            return nhan_vien.hr_employee_id
+        
+        return self.env.user.employee_id
 
     name = fields.Char(
         string='Mã thanh lý',
@@ -61,6 +95,18 @@ class AssetDisposal(models.Model):
         string='Giá thanh lý',
         help='Giá bán hoặc giá trị thu hồi được'
     )
+
+    suggested_disposal_value = fields.Float(
+        string='Giá thanh lý đề xuất',
+        compute='_compute_suggested_disposal_value',
+        readonly=True,
+        help='Giá đề xuất dựa trên Giá trị hiện tại và quy tắc cấu hình'
+    )
+    disposal_value_is_manual = fields.Boolean(
+        string='Đã chỉnh tay giá thanh lý',
+        default=False,
+        help='Nếu đã chỉnh tay, hệ thống sẽ không tự ghi đè giá thanh lý'
+    )
     loss_gain = fields.Float(
         string='Lãi/Lỗ',
         compute='_compute_loss_gain',
@@ -84,7 +130,8 @@ class AssetDisposal(models.Model):
         'hr.employee',
         string='Người đề xuất',
         required=True,
-        default=lambda self: self.env.user.employee_id,
+        default=lambda self: self._get_default_responsible(),
+        domain="[('nhan_vien_id.don_vi_chinh_id.ten_don_vi', 'ilike', 'bảo trì'), ('nhan_vien_id.chuc_vu_chinh_id.ten_chuc_vu', 'ilike', 'kiểm kê')]",
         tracking=True
     )
     approved_by = fields.Many2one(
@@ -125,6 +172,7 @@ class AssetDisposal(models.Model):
     executed_by = fields.Many2one(
         'hr.employee',
         string='Người thực hiện',
+        domain="[('nhan_vien_id.don_vi_chinh_id.ten_don_vi', 'ilike', 'bảo trì'), ('nhan_vien_id.chuc_vu_chinh_id.ten_chuc_vu', 'ilike', 'kiểm kê')]",
         tracking=True
     )
     executed_date = fields.Date(
@@ -159,16 +207,121 @@ class AssetDisposal(models.Model):
         ondelete='set null'
     )
 
+    van_ban_den_count = fields.Integer(
+        string='Văn bản đến',
+        compute='_compute_van_ban_den_count',
+        store=False
+    )
+
+    def _compute_van_ban_den_count(self):
+        VanBanDen = self.env['van_ban_den']
+        for rec in self:
+            rec.van_ban_den_count = VanBanDen.search_count([
+                ('source_model', '=', rec._name),
+                ('source_res_id', '=', rec.id),
+            ])
+
+    def action_view_van_ban_den(self):
+        self.ensure_one()
+        action = self.env.ref('quan_ly_van_ban.action_van_ban_den').read()[0]
+        action['domain'] = [('source_model', '=', self._name), ('source_res_id', '=', self.id)]
+        action['context'] = {
+            'default_source_model': self._name,
+            'default_source_res_id': self.id,
+        }
+        return action
+
+    def action_create_van_ban_den(self):
+        self.ensure_one()
+        handler_employee = self.requested_by.nhan_vien_id if self.requested_by and hasattr(self.requested_by, 'nhan_vien_id') else False
+        department = handler_employee.don_vi_chinh_id if handler_employee else False
+        due_date = fields.Date.to_string(self.date) if self.date else False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tạo văn bản đến',
+            'res_model': 'van_ban_den',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_source_model': self._name,
+                'default_source_res_id': self.id,
+                'default_ten_van_ban': f'Hồ sơ thanh lý {self.name}',
+                'default_handler_employee_id': handler_employee.id if handler_employee else False,
+                'default_department_id': department.id if department else False,
+                'default_due_date': due_date,
+            },
+        }
+
     @api.model
     def create(self, vals):
         if vals.get('name', _('New')) == _('New'):
             vals['name'] = self.env['ir.sequence'].next_by_code('dnu.asset.disposal') or _('New')
-        return super(AssetDisposal, self).create(vals)
+        record = super(AssetDisposal, self).create(vals)
+
+        # Auto-fill disposal_value on server-side only if user didn't provide a value
+        # and there is a matching rule.
+        if not vals.get('disposal_value') and not vals.get('disposal_value_is_manual'):
+            rule = record._get_matching_disposal_rule()
+            if rule:
+                record.disposal_value = record._get_suggested_disposal_value()
+
+        return record
 
     @api.depends('current_value', 'disposal_value')
     def _compute_loss_gain(self):
         for disposal in self:
             disposal.loss_gain = disposal.disposal_value - disposal.current_value
+
+    @api.depends('current_value', 'disposal_type', 'reason', 'asset_category')
+    def _compute_suggested_disposal_value(self):
+        for disposal in self:
+            disposal.suggested_disposal_value = disposal._get_suggested_disposal_value()
+
+    def _get_matching_disposal_rule(self):
+        """Pick the most specific rule for this disposal.
+
+        Specificity priority: category-specific > generic, reason-specific > generic, then sequence.
+        """
+        self.ensure_one()
+
+        if not self.disposal_type:
+            return self.env['dnu.asset.disposal.rule']
+
+        category_id = self.asset_category.id if self.asset_category else False
+        domain = [
+            ('active', '=', True),
+            ('disposal_type', '=', self.disposal_type),
+            '|', ('category_id', '=', False), ('category_id', '=', category_id),
+            '|', ('reason', '=', False), ('reason', '=', self.reason or False),
+        ]
+        rules = self.env['dnu.asset.disposal.rule'].search(domain)
+        if not rules:
+            return rules
+
+        rules = rules.sorted(key=lambda r: (
+            0 if r.category_id else 1,
+            0 if r.reason else 1,
+            r.sequence,
+            r.id,
+        ))
+        return rules[:1]
+
+    def _get_suggested_disposal_value(self):
+        self.ensure_one()
+
+        if not self.current_value or self.current_value <= 0:
+            return 0.0
+
+        rule = self._get_matching_disposal_rule()
+        if not rule:
+            return 0.0
+
+        value = self.current_value * (rule.coefficient_percent / 100.0)
+        if rule.min_value:
+            value = max(value, rule.min_value)
+        if rule.max_value:
+            value = min(value, rule.max_value)
+        return max(value, 0.0)
 
     @api.onchange('asset_id')
     def _onchange_asset_id(self):
@@ -184,6 +337,33 @@ class AssetDisposal(models.Model):
                 self.current_value = depreciation.current_value
             else:
                 self.current_value = self.asset_id.purchase_value
+
+    @api.onchange('asset_id', 'current_value', 'disposal_type', 'reason')
+    def _onchange_autofill_disposal_value(self):
+        """Auto-fill Giá thanh lý theo đề xuất nếu người dùng chưa chỉnh tay."""
+        for disposal in self:
+            if not disposal.asset_id:
+                continue
+            rule = disposal._get_matching_disposal_rule()
+            if rule and not disposal.disposal_value_is_manual:
+                disposal.disposal_value = disposal._get_suggested_disposal_value()
+
+    @api.onchange('disposal_value')
+    def _onchange_disposal_value_is_manual(self):
+        """Mark as manual only when user deviates from suggested price.
+
+        If the price is cleared (0/empty), we allow auto-fill again.
+        """
+        for disposal in self:
+            if not disposal.disposal_value:
+                disposal.disposal_value_is_manual = False
+                continue
+
+            suggested = disposal._get_suggested_disposal_value()
+            rounding = disposal.currency_id.rounding if disposal.currency_id else 0.01
+            disposal.disposal_value_is_manual = (
+                float_compare(disposal.disposal_value, suggested, precision_rounding=rounding) != 0
+            )
 
     @api.constrains('disposal_value')
     def _check_disposal_value(self):

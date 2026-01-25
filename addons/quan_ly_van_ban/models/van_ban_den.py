@@ -1,14 +1,13 @@
 from odoo import models, fields, api
-from datetime import date
 
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError
 
 class VanBanDen(models.Model):
     _name = 'van_ban_den'
     _description = 'Bảng chứa thông tin văn bản đến'
     _rec_name = 'ten_van_ban'
 
-    so_van_ban_den = fields.Char("Số hiệu văn bản", required=True)
+    so_van_ban_den = fields.Char("Số văn bản đến", required=True)
     ten_van_ban = fields.Char("Tên văn bản", required=True)
     so_hieu_van_ban = fields.Char("Số hiệu văn bản", required=True)
     noi_gui_den = fields.Char("Nơi gửi đến")
@@ -18,6 +17,18 @@ class VanBanDen(models.Model):
     receiver_employee_ids = fields.Many2many('nhan_vien', 'van_ban_den_receiver_rel', 'van_ban_id', 'employee_id', string="Người nhận / phối hợp")
     department_id = fields.Many2one('don_vi', string="Phòng/Ban")
     due_date = fields.Date(string="Hạn xử lý")
+
+    # Link back to business document (e.g., bảo trì/thanh lý/luân chuyển/phòng họp)
+    source_model = fields.Char(string='Nguồn (Model)', index=True)
+    source_res_id = fields.Integer(string='Nguồn (ID)', index=True)
+    is_asset_document = fields.Boolean(
+        string='Liên quan tài sản/phòng họp',
+        compute='_compute_is_asset_document',
+        store=True,
+        index=True,
+        readonly=True,
+        help='Đánh dấu văn bản đến được liên kết từ nghiệp vụ tài sản/phòng họp'
+    )
 
     # Giao việc & nhắc hạn
     task_ids = fields.One2many('van_ban_task', 'van_ban_id', string='Công việc liên quan')
@@ -30,6 +41,11 @@ class VanBanDen(models.Model):
     def _compute_task_count(self):
         for record in self:
             record.task_count = len(record.task_ids)
+
+    @api.depends('source_model')
+    def _compute_is_asset_document(self):
+        for rec in self:
+            rec.is_asset_document = bool(rec.source_model and rec.source_model.startswith('dnu.'))
 
     def _compute_overdue(self):
         today = fields.Date.today()
@@ -59,6 +75,19 @@ class VanBanDen(models.Model):
             'res_model': 'van_ban_task',
             'domain': [('van_ban_id', '=', self.id)],
             'context': {'default_van_ban_id': self.id},
+        }
+
+    def action_open_source(self):
+        self.ensure_one()
+        if not self.source_model or not self.source_res_id:
+            raise UserError('Văn bản này chưa được liên kết với nghiệp vụ nào.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nghiệp vụ liên quan',
+            'res_model': self.source_model,
+            'res_id': self.source_res_id,
+            'view_mode': 'form',
+            'target': 'current',
         }
 
     @api.model

@@ -30,11 +30,13 @@
                     <field name="location"/>
                     <field name="state"/>
                     <field name="is_available_now"/>
+                    <field name="availability_status"/>
                     <field name="image"/>
                     <field name="color"/>
+                    <field name="id"/>
                     <templates>
                         <t t-name="kanban-box">
-                            <div t-attf-class="#{kanban_color(record.color.raw_value)} oe_kanban_global_click">
+                            <div t-attf-class="#{kanban_color(record.color and record.color.raw_value or 0)} oe_kanban_global_click">
                                 <div class="o_kanban_image">
                                     <img t-att-src="kanban_image('dnu.meeting.room', 'image', record.id.raw_value)" alt="Room"/>
                                 </div>
@@ -43,11 +45,24 @@
                                         <strong class="o_kanban_record_title">
                                             <field name="name"/>
                                         </strong>
-                                        <span class="badge badge-pill" t-if="record.is_available_now.raw_value" style="background-color: #28a745;">
+                                        <span class="badge badge-pill" 
+                                              t-if="record.availability_status and record.availability_status.raw_value == 'available'" 
+                                              style="background-color: #28a745;">
                                             <i class="fa fa-check"/> Sẵn sàng
                                         </span>
-                                        <span class="badge badge-pill badge-danger" t-else="">
-                                            <i class="fa fa-times"/> Đang sử dụng
+                                        <span class="badge badge-pill" 
+                                              t-elif="record.availability_status and record.availability_status.raw_value == 'in_use'" 
+                                              style="background-color: #dc3545;">
+                                            <i class="fa fa-user"/> Đang sử dụng
+                                        </span>
+                                        <span class="badge badge-pill" 
+                                              t-elif="record.availability_status and record.availability_status.raw_value == 'not_allowed'" 
+                                              style="background-color: #6c757d;">
+                                            <i class="fa fa-ban"/> Chưa cho phép
+                                        </span>
+                                        <span class="badge badge-pill badge-warning" 
+                                              t-elif="record.availability_status and record.availability_status.raw_value == 'maintenance'">
+                                            <i class="fa fa-wrench"/> Bảo trì
                                         </span>
                                     </div>
                                     <div class="o_kanban_record_body">
@@ -75,10 +90,13 @@
                         <field name="state" widget="statusbar"/>
                     </header>
                     <sheet>
-                        <field name="image" widget="image" class="oe_avatar" options="{'size': [90, 90]}"/>
+                        <field name="image" widget="image" class="oe_avatar" options="{'size': [180, 180]}"/>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_bookings" type="object" class="oe_stat_button" icon="fa-calendar">
                                 <field name="booking_count" widget="statinfo" string="Lượt đặt"/>
+                            </button>
+                            <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
+                                <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
                             </button>
                         </div>
                         <div class="oe_title">

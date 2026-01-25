@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- AI Wizard Views for integration into existing views -->
+    
+    <!-- ===================== Asset Form - Add AI Button ===================== -->
+    <record id="view_dnu_asset_form_ai" model="ir.ui.view">
+        <field name="name">dnu.asset.form.ai</field>
+        <field name="model">dnu.asset</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_asset_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_ai_suggest_maintenance" 
+                        type="object" 
+                        string="🤖 AI Gợi ý bảo trì" 
+                        class="btn-secondary"
+                        attrs="{'invisible': [('state', '=', 'disposed')]}"/>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- ===================== Booking Form - Add AI Button ===================== -->
+    <record id="view_dnu_meeting_booking_form_ai" model="ir.ui.view">
+        <field name="name">dnu.meeting.booking.form.ai</field>
+        <field name="model">dnu.meeting.booking</field>
+        <field name="inherit_id" ref="dnu_meeting_asset.view_dnu_meeting_booking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_ai_generate_summary" 
+                        type="object" 
+                        string="📝 AI Tạo biên bản" 
+                        class="btn-secondary"
+                        attrs="{'invisible': [('state', 'not in', ['done', 'in_progress', 'confirmed'])]}"/>
+                <button name="action_ai_generate_agenda" 
+                        type="object" 
+                        string="📋 AI Tạo agenda" 
+                        class="btn-secondary"
+                        attrs="{'invisible': [('state', 'not in', ['draft', 'submitted'])]}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

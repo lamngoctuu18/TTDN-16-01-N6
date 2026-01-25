@@ -96,6 +96,12 @@ class MeetingRoom(models.Model):
         compute='_compute_is_available_now',
         string='Sẵn sàng ngay'
     )
+    availability_status = fields.Selection([
+        ('available', 'Sẵn sàng'),
+        ('in_use', 'Đang sử dụng'),
+        ('not_allowed', 'Chưa cho phép'),
+        ('maintenance', 'Bảo trì'),
+    ], compute='_compute_availability_status', string='Trạng thái hiện tại')
     
     # Additional
     description = fields.Text(string='Mô tả')
@@ -114,17 +120,63 @@ class MeetingRoom(models.Model):
         tracking=True
     )
 
+    van_ban_den_count = fields.Integer(
+        string='Văn bản đến',
+        compute='_compute_van_ban_den_count',
+        store=False
+    )
+
+    def _compute_van_ban_den_count(self):
+        VanBanDen = self.env['van_ban_den']
+        for rec in self:
+            rec.van_ban_den_count = VanBanDen.search_count([
+                ('source_model', '=', rec._name),
+                ('source_res_id', '=', rec.id),
+            ])
+
+    def action_view_van_ban_den(self):
+        self.ensure_one()
+        action = self.env.ref('quan_ly_van_ban.action_van_ban_den').read()[0]
+        action['domain'] = [('source_model', '=', self._name), ('source_res_id', '=', self.id)]
+        action['context'] = {
+            'default_source_model': self._name,
+            'default_source_res_id': self.id,
+        }
+        return action
+
+    def action_create_van_ban_den(self):
+        self.ensure_one()
+        handler_employee = self.responsible_id.nhan_vien_id if self.responsible_id and hasattr(self.responsible_id, 'nhan_vien_id') else False
+        department = handler_employee.don_vi_chinh_id if handler_employee else False
+        ten_van_ban = f'Văn bản đến - Phòng họp {self.code or self.name}'
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tạo văn bản đến',
+            'res_model': 'van_ban_den',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_source_model': self._name,
+                'default_source_res_id': self.id,
+                'default_ten_van_ban': ten_van_ban,
+                'default_handler_employee_id': handler_employee.id if handler_employee else False,
+                'default_department_id': department.id if department else False,
+                'default_due_date': fields.Date.today(),
+            },
+        }
+
     @api.depends('booking_ids')
     def _compute_booking_count(self):
         for room in self:
             room.booking_count = len(room.booking_ids)
 
-    @api.depends('state', 'booking_ids')
+    @api.depends('state', 'booking_ids', 'allow_booking')
     def _compute_is_available_now(self):
         """Kiểm tra phòng có sẵn ngay bây giờ không"""
         now = fields.Datetime.now()
         for room in self:
-            if room.state != 'available':
+            # Nếu không cho phép đặt phòng hoặc trạng thái không available
+            if not room.allow_booking or room.state != 'available':
                 room.is_available_now = False
                 continue
             
@@ -137,6 +189,34 @@ class MeetingRoom(models.Model):
             ], limit=1)
             
             room.is_available_now = not bool(current_booking)
+    
+    @api.depends('state', 'booking_ids', 'allow_booking')
+    def _compute_availability_status(self):
+        """Tính trạng thái phòng hiện tại"""
+        now = fields.Datetime.now()
+        for room in self:
+            # Ưu tiên 1: Kiểm tra trạng thái phòng
+            if room.state == 'maintenance':
+                room.availability_status = 'maintenance'
+                continue
+            
+            # Ưu tiên 2: Kiểm tra cho phép đặt phòng
+            if not room.allow_booking:
+                room.availability_status = 'not_allowed'
+                continue
+            
+            # Ưu tiên 3: Kiểm tra có booking đang diễn ra
+            current_booking = self.env['dnu.meeting.booking'].search([
+                ('room_id', '=', room.id),
+                ('state', 'in', ['confirmed', 'in_progress']),
+                ('start_datetime', '<=', now),
+                ('end_datetime', '>=', now),
+            ], limit=1)
+            
+            if current_booking:
+                room.availability_status = 'in_use'
+            else:
+                room.availability_status = 'available'
 
     def check_availability(self, start_datetime, end_datetime, exclude_booking_id=None):
         """Kiểm tra phòng có khả dụng trong khoảng thời gian không
