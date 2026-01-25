@@ -70,15 +70,58 @@ odoo.define('event_meeting_room_extended.meeting_room', function (require) {
             // Track join/leave events
             api.addEventListener('videoConferenceJoined', function (event) {
                 self._roomJoin(roomId);
+                self._logActivity(roomId, 'join', event && event.id, userName, {
+                    local: true,
+                });
             });
             
             api.addEventListener('videoConferenceLeft', function (event) {
                 self._roomLeave(roomId);
+                self._logActivity(roomId, 'leave', event && event.id, userName, {
+                    local: true,
+                });
+            });
+
+            api.addEventListener('participantJoined', function (event) {
+                self._logActivity(roomId, 'participant_join', event && event.id, event && event.displayName, {
+                    local: false,
+                });
+            });
+
+            api.addEventListener('participantLeft', function (event) {
+                self._logActivity(roomId, 'participant_leave', event && event.id, event && event.displayName, {
+                    local: false,
+                });
+            });
+
+            api.addEventListener('raiseHandUpdated', function (event) {
+                var action = event && event.handRaised ? 'hand_raise' : 'hand_lower';
+                self._logActivity(roomId, action, event && event.id, event && event.displayName, {
+                    local: event && event.local,
+                });
+            });
+
+            api.addEventListener('audioMuteStatusChanged', function (event) {
+                var action = event && event.muted ? 'mute_audio' : 'unmute_audio';
+                self._logActivity(roomId, action, event && event.id, event && event.displayName, {
+                    local: event && event.local,
+                });
+            });
+
+            api.addEventListener('videoMuteStatusChanged', function (event) {
+                var action = event && event.muted ? 'mute_video' : 'unmute_video';
+                self._logActivity(roomId, action, event && event.id, event && event.displayName, {
+                    local: event && event.local,
+                });
             });
             
             // Cleanup on page unload
             $(window).on('beforeunload', function() {
                 self._roomLeave(roomId);
+                self._logActivity(roomId, 'leave', null, userName, {
+                    local: true,
+                    reason: 'beforeunload',
+                });
             });
         },
         
@@ -90,14 +133,32 @@ odoo.define('event_meeting_room_extended.meeting_room', function (require) {
                     } else {
                         // Update UI
                         $('#room_participants').text(result.current_participants);
-                        var percentage = (result.current_participants / $('#room_capacity_bar').data('max')) * 100;
+                        var max = parseInt($('#room_capacity_bar').data('max') || 0);
+                        var percentage = max ? (result.current_participants / max) * 100 : 0;
                         $('#room_capacity_bar').css('width', percentage + '%');
                     }
                 });
         },
         
         _roomLeave: function (roomId) {
-            return ajax.jsonRpc('/event/room/' + roomId + '/leave', 'call', {});
+            return ajax.jsonRpc('/event/room/' + roomId + '/leave', 'call', {})
+                .then(function (result) {
+                    if (result && result.current_participants !== undefined) {
+                        $('#room_participants').text(result.current_participants);
+                        var max = parseInt($('#room_capacity_bar').data('max') || 0);
+                        var percentage = max ? (result.current_participants / max) * 100 : 0;
+                        $('#room_capacity_bar').css('width', percentage + '%');
+                    }
+                });
+        },
+
+        _logActivity: function (roomId, action, participantId, displayName, metadata) {
+            return ajax.jsonRpc('/event/room/' + roomId + '/activity', 'call', {
+                action: action,
+                participant_id: participantId || null,
+                display_name: displayName || null,
+                metadata: metadata || null,
+            });
         },
     });
 

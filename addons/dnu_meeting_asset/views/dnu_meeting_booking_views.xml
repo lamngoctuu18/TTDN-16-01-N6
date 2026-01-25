@@ -62,6 +62,8 @@
                         <button name="action_confirm" string="Xác nhận" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'submitted')]}" groups="dnu_meeting_asset.group_facility_staff"/>
                         <button name="action_checkin" string="Check-in" type="object" class="btn-success" attrs="{'invisible': ['|', ('state', '!=', 'confirmed'), ('can_checkin', '=', False)]}"/>
                         <button name="action_checkout" string="Check-out" type="object" class="btn-warning" attrs="{'invisible': [('state', '!=', 'in_progress')]}"/>
+                        <button name="action_create_event_jitsi_room" string="Tạo sự kiện + phòng Jitsi" type="object" class="btn-info"
+                                attrs="{'invisible': [('event_meeting_room_id', '!=', False)]}"/>
                         <button name="action_cancel" string="Hủy" type="object" attrs="{'invisible': [('state', 'in', ['done', 'cancelled'])]}" confirm="Bạn có chắc chắn muốn hủy lịch đặt phòng này?"/>
                         <button name="action_suggest_alternatives" string="Gợi ý phòng khác" type="object" attrs="{'invisible': [('has_conflicts', '=', False)]}" class="btn-info"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,submitted,confirmed,in_progress,done"/>
@@ -72,6 +74,8 @@
                         <field name="is_past" invisible="1"/>
                         <field name="zoom_meeting_id" invisible="1"/>
                         <field name="google_calendar_event_id" invisible="1"/>
+                        <field name="event_event_id" invisible="1"/>
+                        <field name="event_meeting_room_id" invisible="1"/>
                         
                         <!-- Stat Buttons -->
                         <div class="oe_button_box" name="button_box">
@@ -79,6 +83,13 @@
                                 <div class="o_field_widget o_stat_info">
                                     <span class="o_stat_text">Lịch</span>
                                     <span class="o_stat_text">Phòng họp</span>
+                                </div>
+                            </button>
+                            <button class="oe_stat_button" type="object" name="action_open_event_meeting_room" icon="fa-comments"
+                                    attrs="{'invisible': [('event_meeting_room_id', '=', False)]}">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Phòng</span>
+                                    <span class="o_stat_text">Jitsi</span>
                                 </div>
                             </button>
                             <button class="oe_stat_button" type="object" name="action_open_zoom_meeting" icon="fa-video-camera"
@@ -118,36 +129,8 @@
                                 <field name="subject" placeholder="Chủ đề cuộc họp..."/>
                             </h2>
                         </div>
-                        
-                        <style>
-                            .o_booking_modern_form .o_group {
-                                margin-bottom: 20px;
-                            }
-                            .o_booking_modern_form .o_group .o_group_col {
-                                background: #f8f9fa;
-                                padding: 15px;
-                                border-radius: 8px;
-                                border: 1px solid #e9ecef;
-                            }
-                            .o_booking_modern_form h2 {
-                                color: #2980B9;
-                                font-weight: 600;
-                            }
-                            .o_booking_modern_form .alert-info {
-                                background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
-                                border-left: 4px solid #2196F3;
-                                color: #1565C0;
-                            }
-                            .o_booking_modern_form .o_field_many2manytags .badge {
-                                background: linear-gradient(135deg, #E67E22 0%, #D35400 100%);
-                                color: white;
-                                padding: 6px 12px;
-                                border-radius: 20px;
-                                font-weight: 500;
-                            }
-                        </style>
-                        
-                        <group class="o_booking_modern_form">
+
+                        <group>
                             <group string="Thông tin phòng họp">
                                 <field name="num_attendees"/>
                                 <group string="Tiện nghi" col="3">
@@ -156,7 +139,7 @@
                                     <field name="need_whiteboard"/>
                                 </group>
                                 <field name="suggested_room_ids" invisible="1"/>
-                                <div class="alert alert-success" attrs="{'invisible': [('suggested_room_ids', '=', [])]}" style="padding: 8px 12px; margin: 8px 0; font-size: 12px;">
+                                <div class="alert alert-success" attrs="{'invisible': [('suggested_room_ids', '=', [])]}">
                                     <i class="fa fa-check-circle"/> <b>Gợi ý:</b> Hệ thống đã lọc các phòng phù hợp theo số người và tiện nghi.
                                 </div>
                                 <field name="room_id" options="{'no_create': True}"/>
@@ -170,9 +153,9 @@
                             </group>
                         </group>
                         <field name="attendee_ids" invisible="1"/>
-                        <group class="o_booking_modern_form">
+                        <group>
                             <group string="Bổ sung trang thiết bị">
-                                <div class="alert alert-info mb-2" role="alert" style="padding: 8px 12px; font-size: 12px;">
+                                <div class="alert alert-info mb-2" role="alert">
                                     <i class="fa fa-info-circle"/> <b>Lưu ý:</b> Chỉ hiển thị thiết bị sẵn sàng và chưa bị mượn trong khoảng thời gian đặt phòng.
                                 </div>
                                 <field name="required_equipment_ids" 
@@ -188,6 +171,27 @@
                             </group>
                         </group>
                         <notebook>
+                            <page string="Sự kiện + Jitsi">
+                                <div class="alert alert-info" role="alert" attrs="{'invisible': [('event_meeting_room_id', '!=', False)]}">
+                                    <i class="fa fa-info-circle"/> Tạo nhanh “Sự kiện + phòng Jitsi” từ booking để có link phòng cộng đồng.
+                                </div>
+                                <group>
+                                    <group>
+                                        <field name="event_event_id" readonly="1"/>
+                                        <field name="event_meeting_room_id" readonly="1"/>
+                                    </group>
+                                    <group attrs="{'invisible': [('event_meeting_room_id', '=', False)]}">
+                                        <field name="event_meeting_room_website_url" widget="url" readonly="1"/>
+                                        <field name="event_meeting_room_url" widget="url" readonly="1"/>
+                                    </group>
+                                </group>
+                                <div>
+                                    <button name="action_create_event_jitsi_room" string="Tạo sự kiện + phòng Jitsi" type="object" class="btn-primary"
+                                            attrs="{'invisible': [('event_meeting_room_id', '!=', False)]}"/>
+                                    <button name="action_open_event_meeting_room" string="Mở phòng Jitsi" type="object" class="btn-info"
+                                            attrs="{'invisible': [('event_meeting_room_id', '=', False)]}"/>
+                                </div>
+                            </page>
                             <page string="Mô tả">
                                 <field name="description" placeholder="Mô tả chi tiết về cuộc họp..."/>
                             </page>

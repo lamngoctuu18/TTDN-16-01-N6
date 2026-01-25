@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import json
 from odoo import http, _
+from odoo import fields
 from odoo.http import request
 from odoo.exceptions import AccessError, UserError
 from odoo.addons.website.controllers.main import QueryURL
@@ -203,6 +205,7 @@ class EventCommunityController(http.Controller):
         
         try:
             room.join_room()
+            self._log_activity(room, action='join')
             return {'success': True, 'current_participants': room.current_participants}
         except Exception as e:
             return {'error': str(e)}
@@ -217,9 +220,67 @@ class EventCommunityController(http.Controller):
         
         try:
             room.leave_room()
+            self._log_activity(room, action='leave')
             return {'success': True, 'current_participants': room.current_participants}
         except Exception as e:
             return {'error': str(e)}
+
+    @http.route(['/event/room/<int:room_id>/activity'], type='json', auth='public', website=True, csrf=False)
+    def room_activity(self, room_id, **kwargs):
+        """Log a room activity event from the client (Jitsi events)."""
+        room = request.env['event.meeting.room'].sudo().browse(room_id)
+        if not room.exists():
+            return {'error': 'Room not found'}
+
+        action = (kwargs.get('action') or '').strip()
+        participant_id = kwargs.get('participant_id')
+        display_name = kwargs.get('display_name')
+        metadata = kwargs.get('metadata')
+
+        if not action:
+            return {'error': 'Missing action'}
+
+        self._log_activity(
+            room,
+            action=action,
+            participant_id=participant_id,
+            display_name=display_name,
+            metadata=metadata,
+        )
+
+        return {'success': True}
+
+    def _log_activity(self, room, action, participant_id=None, display_name=None, metadata=None):
+        """Internal helper to log activity with current user context."""
+        env = request.env
+        user = env.user if env else None
+        is_public = user._is_public() if user else True
+
+        vals = {
+            'room_id': room.id,
+            'action': action,
+            'participant_id': participant_id or False,
+            'action_time': fields.Datetime.now(),
+        }
+
+        if not is_public:
+            vals.update({
+                'user_id': user.id,
+                'partner_id': user.partner_id.id if user.partner_id else False,
+                'guest_name': display_name or user.name,
+            })
+        else:
+            vals.update({
+                'guest_name': display_name or 'Guest',
+            })
+
+        if metadata is not None:
+            try:
+                vals['metadata_json'] = json.dumps(metadata, ensure_ascii=False)
+            except Exception:
+                vals['metadata_json'] = False
+
+        env['event.meeting.room.action.log'].sudo().create(vals)
 
     @http.route(['/event/room/<int:room_id>/pin'], type='json', auth='user', website=True)
     def room_pin(self, room_id, **kwargs):

@@ -1,17 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Menu -->
-        <menuitem id="menu_event_meeting_room_root"
-                  name="Phòng Họp"
-                  parent="event.event_main_menu"
-                  sequence="50"
-                  groups="event.group_event_user"/>
+        <!-- Main Application Menu -->
+        <menuitem id="menu_event_meeting_room_app"
+                  name="Phòng Họp Sự Kiện"
+                  sequence="15"
+                  web_icon="event_meeting_room_extended,static/description/icon.png"/>
 
-        <menuitem id="menu_event_meeting_room"
-                  name="Phòng Họp"
-                  parent="menu_event_meeting_room_root"
+        <!-- Submenu: Phòng họp -->
+        <menuitem id="menu_event_meeting_room_main"
+                  name="Phòng Họp Online"
+                  parent="menu_event_meeting_room_app"
                   action="action_event_meeting_room"
                   sequence="10"/>
+
+        <!-- Submenu: Sự kiện -->
+        <menuitem id="menu_event_meeting_room_events"
+                  name="Sự kiện"
+                  parent="menu_event_meeting_room_app"
+                  action="event.action_event_view"
+                  sequence="20"/>
+
+        <!-- Submenu: Loại sự kiện -->
+        <menuitem id="menu_event_meeting_room_type"
+                  name="Loại Sự kiện"
+                  parent="menu_event_meeting_room_app"
+                  action="event.action_event_type"
+                  sequence="30"/>
+
+        <!-- ============================================= -->
+        <!-- Tích hợp vào menu Tài sản & Phòng họp        -->
+        <!-- ============================================= -->
+        <menuitem id="menu_event_room_in_asset"
+                  name="Phòng Họp Sự Kiện (Jitsi)"
+                  parent="dnu_meeting_asset.menu_dnu_meeting"
+                  action="action_event_meeting_room"
+                  sequence="30"/>
     </data>
 </odoo>

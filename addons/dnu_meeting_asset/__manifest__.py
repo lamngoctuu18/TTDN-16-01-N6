@@ -79,7 +79,7 @@ Phát triển bởi: Nhóm Sinh viên FIT-DNU
     'version': '1.1.0',
 
     # Dependencies
-    'depends': ['base', 'hr', 'nhan_su', 'calendar', 'mail', 'board', 'quan_ly_van_ban'],
+    'depends': ['base', 'hr', 'nhan_su', 'calendar', 'mail', 'board', 'quan_ly_van_ban', 'event_meeting_room_extended'],
 
     # External dependencies
     'external_dependencies': {

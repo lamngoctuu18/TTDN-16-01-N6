@@ -125,6 +125,16 @@ class EventMeetingRoom(models.Model):
         default=0,
         help='Tổng số lần mọi người tham gia phòng này'
     )
+
+    action_log_ids = fields.One2many(
+        'event.meeting.room.action.log',
+        'room_id',
+        string='Nhật ký hoạt động'
+    )
+    action_log_count = fields.Integer(
+        string='Số hoạt động',
+        compute='_compute_action_log_count'
+    )
     
     # Jitsi integration
     room_token = fields.Char(
@@ -161,6 +171,11 @@ class EventMeetingRoom(models.Model):
     def _compute_is_full(self):
         for room in self:
             room.is_full = room.current_participants >= room.max_capacity
+
+    @api.depends('action_log_ids')
+    def _compute_action_log_count(self):
+        for room in self:
+            room.action_log_count = len(room.action_log_ids)
 
     @api.depends('event_id', 'room_token')
     def _compute_jitsi_room_name(self):
@@ -289,6 +304,19 @@ class EventMeetingRoom(models.Model):
         self.ensure_one()
         if self.current_participants > 0:
             self.current_participants -= 1
+
+    def action_view_action_logs(self):
+        self.ensure_one()
+        return {
+            'name': _('Nhật ký hoạt động'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'event.meeting.room.action.log',
+            'view_mode': 'tree,pivot,graph',
+            'domain': [('room_id', '=', self.id)],
+            'context': {
+                'default_room_id': self.id,
+            },
+        }
 
     @api.model
     def _cron_archive_inactive_rooms(self):

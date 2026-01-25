@@ -318,6 +318,26 @@ class MeetingBooking(models.Model):
     # Google Calendar integration fields
     google_calendar_event_id = fields.Char(string='Google Calendar Event ID', readonly=True, copy=False)
     google_calendar_link = fields.Char(string='Link Google Calendar', readonly=True, copy=False)
+
+    # Event + Jitsi (event_meeting_room_extended) integration
+    event_event_id = fields.Many2one(
+        'event.event',
+        string='Sự kiện (Event)',
+        readonly=True,
+        copy=False,
+        ondelete='set null',
+        help='Sự kiện được tạo từ booking (để dùng cộng đồng/phòng Jitsi).'
+    )
+    event_meeting_room_id = fields.Many2one(
+        'event.meeting.room',
+        string='Phòng Jitsi',
+        readonly=True,
+        copy=False,
+        ondelete='set null',
+        help='Phòng họp Jitsi (community room) được tạo từ booking.'
+    )
+    event_meeting_room_url = fields.Char(related='event_meeting_room_id.room_url', string='Link Jitsi', readonly=True)
+    event_meeting_room_website_url = fields.Char(related='event_meeting_room_id.website_url', string='Link Community', readonly=True)
     
     # Integration status
     zoom_sync_status = fields.Selection([
@@ -439,6 +459,20 @@ class MeetingBooking(models.Model):
             for booking in self:
                 if booking.calendar_event_id:
                     booking._update_calendar_event()
+
+        # Đồng bộ Event/Jitsi room nếu booking đã tạo event
+        if any(key in vals for key in ['start_datetime', 'end_datetime', 'subject']):
+            for booking in self:
+                if booking.event_event_id:
+                    booking.event_event_id.sudo().write({
+                        'name': booking.subject or booking.name,
+                        'date_begin': booking.start_datetime,
+                        'date_end': booking.end_datetime,
+                    })
+                if booking.event_meeting_room_id and 'subject' in vals:
+                    booking.event_meeting_room_id.sudo().write({
+                        'name': booking.subject or booking.name,
+                    })
         
         # Gửi email thông báo nếu có thay đổi quan trọng
         if old_values and any(key in vals for key in important_fields):
@@ -447,6 +481,104 @@ class MeetingBooking(models.Model):
                     booking._send_update_notification_email()
         
         return result
+
+    def _get_or_create_event_type_for_community(self):
+        """Pick an event.type configured for community rooms; create a default one if missing."""
+        event_type = self.env['event.type'].search([('allow_community', '=', True)], limit=1)
+        if event_type:
+            return event_type
+
+        return self.env['event.type'].sudo().create({
+            'name': 'Phòng họp sự kiện (Community)',
+            'allow_community': True,
+            'allow_room_creation': True,
+            'auto_room_creation': False,
+            'default_room_capacity': 50,
+        })
+
+    def action_create_event_jitsi_room(self):
+        """Create an Event + Jitsi community room from this booking."""
+        self.ensure_one()
+
+        if not self.start_datetime or not self.end_datetime:
+            raise UserError(_('Vui lòng chọn thời gian bắt đầu/kết thúc trước khi tạo sự kiện.'))
+
+        if self.state == 'cancelled':
+            raise UserError(_('Không thể tạo sự kiện cho booking đã hủy.'))
+
+        # Idempotent: if already created, just open the room
+        if self.event_meeting_room_id:
+            return self.action_open_event_meeting_room()
+
+        # Ensure external integrations exist if user expects them
+        # - Zoom: only when meeting_type is online
+        if self.meeting_type == 'online' and not self.zoom_meeting_id:
+            self.action_create_zoom_meeting()
+        # - Google Calendar: create if not yet synced
+        if not self.google_calendar_event_id:
+            self.action_sync_google_calendar()
+
+        event_type = self._get_or_create_event_type_for_community()
+
+        event_vals = {
+            'name': self.subject or self.name,
+            'date_begin': self.start_datetime,
+            'date_end': self.end_datetime,
+            'event_type_id': event_type.id,
+            'user_id': (self.create_uid.id if self.create_uid else self.env.user.id),
+        }
+        event = self.env['event.event'].sudo().create(event_vals)
+
+        # Build a small HTML description referencing existing links
+        html_lines = []
+        html_lines.append('<p><b>Booking:</b> %s</p>' % (self.name or ''))
+        if self.room_id:
+            html_lines.append('<p><b>Phòng họp (offline):</b> %s</p>' % (self.room_id.display_name or ''))
+        if self.organizer_name:
+            html_lines.append('<p><b>Người tổ chức:</b> %s</p>' % (self.organizer_name or ''))
+        if self.zoom_join_url:
+            html_lines.append('<p><b>Zoom:</b> <a target="_blank" href="%s">%s</a></p>' % (self.zoom_join_url, self.zoom_join_url))
+        if self.google_calendar_link:
+            html_lines.append('<p><b>Google Calendar:</b> <a target="_blank" href="%s">%s</a></p>' % (self.google_calendar_link, self.google_calendar_link))
+
+        room_capacity = max(int(self.num_attendees or 0), int(getattr(event_type, 'default_room_capacity', 50) or 50))
+        room = self.env['event.meeting.room'].sudo().create({
+            'name': self.subject or self.name,
+            'summary': self.subject or self.name,
+            'description': ''.join(html_lines) if html_lines else False,
+            'event_id': event.id,
+            'max_capacity': room_capacity,
+            'website_published': True,
+        })
+
+        self.sudo().write({
+            'event_event_id': event.id,
+            'event_meeting_room_id': room.id,
+        })
+
+        return {
+            'name': _('Phòng Jitsi'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'event.meeting.room',
+            'res_id': room.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_open_event_meeting_room(self):
+        self.ensure_one()
+        if not self.event_meeting_room_id:
+            raise UserError(_('Booking này chưa có phòng Jitsi.'))
+
+        url = self.event_meeting_room_website_url or self.event_meeting_room_url
+        if not url:
+            raise UserError(_('Không tìm thấy URL phòng Jitsi.'))
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
 
     @api.depends('start_datetime', 'end_datetime')
     def _compute_duration(self):
@@ -1078,14 +1210,20 @@ class MeetingBooking(models.Model):
         description += f"📍 Phòng họp: {self.room_id.name}\n"
         description += f"👤 Người tổ chức: {self.organizer_name}\n"
         description += f"👥 Số người tham dự: {self.num_attendees}\n"
+
+        if self.event_meeting_room_url or self.event_meeting_room_website_url:
+            jitsi_link = self.event_meeting_room_url or self.event_meeting_room_website_url
+            description += f"\n🔗 Link phòng Jitsi: {jitsi_link}\n"
         
         # Lấy location
         location = self.room_id.name
         if self.room_id.location:
             location = f"{self.room_id.name} - {self.room_id.location}"
         
-        # Lấy link Zoom nếu có
-        meeting_link = self.zoom_join_url if self.meeting_type == 'online' else None
+        # Lấy link họp (ưu tiên Jitsi nếu có, sau đó Zoom)
+        meeting_link = self.event_meeting_room_url or self.event_meeting_room_website_url
+        if not meeting_link and self.meeting_type == 'online':
+            meeting_link = self.zoom_join_url
         
         result = gcal.create_event(
             summary=f"{self.name} - {self.subject}",
@@ -1126,6 +1264,9 @@ class MeetingBooking(models.Model):
         description = f"📋 {self.subject}\n\n"
         if self.description:
             description += f"{self.description}\n\n"
+        if self.event_meeting_room_url or self.event_meeting_room_website_url:
+            jitsi_link = self.event_meeting_room_url or self.event_meeting_room_website_url
+            description += f"\n🔗 Link phòng Jitsi: {jitsi_link}\n"
         if self.zoom_join_url:
             description += f"\n🔗 Link họp Zoom: {self.zoom_join_url}\n"
         

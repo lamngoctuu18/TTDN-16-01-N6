@@ -50,6 +50,7 @@
                                                 <div class="progress" style="width: 150px; height: 10px;">
                                                     <div id="room_capacity_bar" 
                                                          class="progress-bar" 
+                                                         t-att-data-max="room.max_capacity"
                                                          t-att-style="'width: %s%%' % (room.current_participants * 100 / room.max_capacity if room.max_capacity else 0)"/>
                                                 </div>
                                             </div>
@@ -154,7 +155,9 @@
                                             <dd><t t-esc="room.total_visits"/> lượt</dd>
                                             
                                             <dt>Hoạt Động Gần Nhất</dt>
-                                            <dd t-field="room.last_activity_date" t-options='{"widget": "relative"}'/>
+                                            <dd>
+                                                <span t-field="room.last_activity_date" t-options='{"widget": "relative"}'/>
+                                            </dd>
                                         </dl>
                                     </div>
                                 </div>

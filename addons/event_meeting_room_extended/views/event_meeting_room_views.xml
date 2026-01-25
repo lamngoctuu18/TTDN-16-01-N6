@@ -43,6 +43,9 @@
                         <button class="oe_stat_button" type="object" name="toggle_active" icon="fa-archive">
                             <field name="active" widget="boolean_button" options="{'terminology': 'archive'}"/>
                         </button>
+                        <button class="oe_stat_button" type="object" name="action_view_action_logs" icon="fa-list">
+                            <field name="action_log_count" widget="statinfo" string="Hoạt động"/>
+                        </button>
                     </div>
                     
                     <widget name="web_ribbon" title="Đã Ghim" bg_color="bg-info" attrs="{'invisible': [('is_pinned', '=', False)]}"/>
@@ -92,6 +95,18 @@
                             <field name="summary" placeholder="Tóm tắt ngắn gọn..."/>
                             <field name="description" placeholder="Mô tả chi tiết về mục đích, chủ đề của phòng, v.v."/>
                         </page>
+                        <page string="Nhật ký" name="activity_logs">
+                            <field name="action_log_ids" nolabel="1">
+                                <tree>
+                                    <field name="action_time"/>
+                                    <field name="action"/>
+                                    <field name="user_id"/>
+                                    <field name="partner_id"/>
+                                    <field name="guest_name"/>
+                                    <field name="participant_id"/>
+                                </tree>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
                 <div class="oe_chatter">
@@ -100,6 +115,37 @@
                     <field name="message_ids"/>
                 </div>
             </form>
+        </field>
+    </record>
+
+    <!-- Action Log Tree View -->
+    <record id="view_event_meeting_room_action_log_tree" model="ir.ui.view">
+        <field name="name">event.meeting.room.action.log.tree</field>
+        <field name="model">event.meeting.room.action.log</field>
+        <field name="arch" type="xml">
+            <tree string="Nhật ký hoạt động" default_order="action_time desc">
+                <field name="action_time"/>
+                <field name="room_id"/>
+                <field name="event_id"/>
+                <field name="action"/>
+                <field name="user_id"/>
+                <field name="partner_id"/>
+                <field name="guest_name"/>
+                <field name="participant_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action Log Pivot View -->
+    <record id="view_event_meeting_room_action_log_pivot" model="ir.ui.view">
+        <field name="name">event.meeting.room.action.log.pivot</field>
+        <field name="model">event.meeting.room.action.log</field>
+        <field name="arch" type="xml">
+            <pivot string="Nhật ký hoạt động">
+                <field name="action_time" interval="day" type="row"/>
+                <field name="action" type="col"/>
+                <field name="id" type="measure"/>
+            </pivot>
         </field>
     </record>
 

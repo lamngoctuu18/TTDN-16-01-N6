@@ -1,0 +1,29 @@
+nohup: ignoring input
+/home/tulam18/Business-Internship/odoo/modules/module.py:9: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2026-01-25 19:38:52,180 52450 INFO ? odoo: Odoo version 15.0 
+2026-01-25 19:38:52,181 52450 INFO ? odoo: Using configuration file at /home/tulam18/Business-Internship/odoo.conf 
+2026-01-25 19:38:52,181 52450 INFO ? odoo: addons paths: ['/home/tulam18/Business-Internship/odoo/addons', '/home/tulam18/.local/share/Odoo/addons/15.0', '/home/tulam18/Business-Internship/addons'] 
+2026-01-25 19:38:52,181 52450 INFO ? odoo: database: odoo@localhost:5432 
+2026-01-25 19:38:52,278 52450 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/bin/wkhtmltopdf 
+2026-01-25 19:38:52,532 52450 INFO ? odoo.service.server: HTTP service (werkzeug) running on LAMNGOCTU.localdomain:8069 
+2026-01-25 19:39:11,436 52450 INFO ? odoo.http: HTTP Configuring static files 
+2026-01-25 19:39:11,455 52450 INFO btl_nhom6 odoo.modules.loading: loading 1 modules... 
+2026-01-25 19:39:11,460 52450 INFO btl_nhom6 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-01-25 19:39:11,465 52450 WARNING btl_nhom6 odoo.modules.module: Missing `license` key in manifest for 'nhan_su', defaulting to LGPL-3 
+2026-01-25 19:39:11,469 52450 WARNING btl_nhom6 odoo.modules.module: Missing `license` key in manifest for 'quan_ly_van_ban', defaulting to LGPL-3 
+2026-01-25 19:39:11,475 52450 INFO btl_nhom6 odoo.modules.loading: loading 48 modules... 
+2026-01-25 19:39:11,481 52450 WARNING btl_nhom6 odoo.modules.module: Missing `license` key in manifest for 'nhan_su', defaulting to LGPL-3 
+2026-01-25 19:39:11,656 52450 WARNING btl_nhom6 odoo.modules.module: Missing `license` key in manifest for 'quan_ly_van_ban', defaulting to LGPL-3 
+2026-01-25 19:39:11,794 52450 INFO btl_nhom6 odoo.modules.loading: 48 modules loaded in 0.32s, 0 queries (+0 extra) 
+2026-01-25 19:39:11,874 52450 INFO btl_nhom6 odoo.modules.loading: Modules loaded. 
+2026-01-25 19:39:11,877 52450 INFO btl_nhom6 odoo.modules.registry: Registry loaded in 0.438s 
+2026-01-25 19:39:11,881 52450 INFO btl_nhom6 odoo.addons.base.models.ir_http: Generating routing map for key 1 
+2026-01-25 19:39:12,103 52450 INFO btl_nhom6 werkzeug: 127.0.0.1 - - [25/Jan/2026 19:39:12] "POST /longpolling/im_status HTTP/1.1" 200 - 36 0.036 0.629
+2026-01-25 19:39:17,521 52450 INFO ? odoo.addons.bus.models.bus: Bus.loop listen imbus on db postgres 
+2026-01-25 19:40:02,527 52450 INFO btl_nhom6 werkzeug: 127.0.0.1 - - [25/Jan/2026 19:40:02] "POST /longpolling/poll HTTP/1.1" 200 - 13 0.012 45.092
+2026-01-25 19:40:02,589 52450 INFO btl_nhom6 werkzeug: 127.0.0.1 - - [25/Jan/2026 19:40:02] "POST /longpolling/im_status HTTP/1.1" 200 - 4 0.003 0.005
+2026-01-25 19:40:42,862 52450 INFO btl_nhom6 odoo.addons.base.models.ir_cron: Starting job `Gửi email nhắc lịch họp (30 phút trước)`. 
+2026-01-25 19:40:42,870 52450 INFO btl_nhom6 odoo.addons.base.models.ir_cron: Job `Gửi email nhắc lịch họp (30 phút trước)` done. 
+2026-01-25 19:40:50,415 52450 INFO btl_nhom6 werkzeug: 127.0.0.1 - - [25/Jan/2026 19:40:50] "POST /longpolling/poll HTTP/1.1" 200 - 9 0.006 47.540
+2026-01-25 19:40:55,013 52450 INFO btl_nhom6 werkzeug: 127.0.0.1 - - [25/Jan/2026 19:40:55] "POST /longpolling/im_status HTTP/1.1" 200 - 4 0.006 0.008
