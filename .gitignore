@@ -51,3 +51,23 @@ package.json
 /src/
 /venv/
 /venv_15_01/
+/.venv/
+
+# Configuration files with secrets
+*.conf.local
+*_credentials.xml
+*_secrets.xml
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Log files
+odoo.log
+nohup.out
+*.log
+
+# Database dumps
+*.sql
+*.dump
