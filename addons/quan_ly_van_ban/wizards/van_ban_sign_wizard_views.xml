@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_van_ban_sign_wizard_form" model="ir.ui.view">
+            <field name="name">van_ban_den.sign.wizard.form</field>
+            <field name="model">van_ban_den.sign.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Ký văn bản">
+                    <group>
+                        <group string="Thông tin văn bản">
+                            <field name="ten_van_ban" readonly="1"/>
+                            <field name="request_type" readonly="1"/>
+                            <field name="requester_name" readonly="1"/>
+                        </group>
+                        <group string="Phê duyệt">
+                            <field name="approval_note" placeholder="Nhập ghi chú (nếu có)..."/>
+                        </group>
+                    </group>
+                    <separator string="Chữ ký"/>
+                    <group>
+                        <field name="signature" widget="signature" required="1"/>
+                    </group>
+                    <footer>
+                        <button name="action_sign_and_approve" string="✅ Duyệt và Ký" type="object" class="btn-success"/>
+                        <button name="action_sign_and_reject" string="❌ Từ chối và Ký" type="object" class="btn-danger"/>
+                        <button name="action_sign" string="Chỉ Ký" type="object" class="btn-secondary"/>
+                        <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

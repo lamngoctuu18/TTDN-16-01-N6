@@ -6,3 +6,4 @@ access_van_ban_den_manager,van_ban_den.manager,model_van_ban_den,quan_ly_van_ban
 access_van_ban_den_user,van_ban_den.user,model_van_ban_den,quan_ly_van_ban.group_vb_user,1,0,0,0
 access_van_ban_task_manager,van_ban_task.manager,model_van_ban_task,quan_ly_van_ban.group_vb_manager,1,1,1,1
 access_van_ban_task_user,van_ban_task.user,model_van_ban_task,base.group_user,1,1,1,0
+access_van_ban_sign_wizard,van_ban_den.sign.wizard,model_van_ban_den_sign_wizard,base.group_user,1,1,1,1

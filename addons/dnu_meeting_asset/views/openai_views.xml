@@ -197,6 +197,10 @@
                 <field name="show_result" invisible="1"/>
                 <footer>
                     <button name="action_execute" type="object" string="🚀 Thực hiện" class="btn-primary"/>
+                    <button name="action_save_as_van_ban_den" type="object" 
+                            string="📝 Lưu làm văn bản đến" 
+                            class="btn-success"
+                            attrs="{'invisible': ['|', ('action_type', '!=', 'summary'), ('show_result', '=', False)]}"/>
                     <button string="Đóng" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

@@ -132,6 +132,9 @@
                             <button name="action_view_handovers" type="object" class="oe_stat_button" icon="fa-file-text-o">
                                 <field name="handover_count" widget="statinfo" string="Biên bản"/>
                             </button>
+                            <button name="action_view_ai_history" type="object" class="oe_stat_button" icon="fa-robot">
+                                <field name="ai_request_count" widget="statinfo" string="AI"/>
+                            </button>
                         </div>
                         <div class="oe_title">
                             <h1>

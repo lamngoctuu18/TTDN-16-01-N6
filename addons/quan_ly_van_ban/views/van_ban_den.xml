@@ -6,6 +6,28 @@
             <field name="model">van_ban_den</field>
             <field name="arch" type="xml">
                 <form>
+                    <header>
+                        <!-- Approval workflow buttons -->
+                        <button name="action_submit_approval" type="object" string="Gửi duyệt" 
+                                class="oe_highlight" 
+                                attrs="{'invisible': ['|', ('request_type', '=', 'normal'), ('approval_state', '!=', 'draft')]}"/>
+                        <button name="action_approve_and_sign" type="object" string="✅ Duyệt &amp; Ký" 
+                                class="btn-success"
+                                attrs="{'invisible': [('approval_state', '!=', 'pending')]}"/>
+                        <button name="action_sign" type="object" string="🖊️ Ký" 
+                                class="btn-primary"
+                                attrs="{'invisible': ['|', ('approval_state', '!=', 'pending'), ('is_signed', '=', True)]}"/>
+                        <button name="action_reject" type="object" string="❌ Từ chối" 
+                                class="btn-danger"
+                                attrs="{'invisible': [('approval_state', '!=', 'pending')]}"/>
+                        <button name="action_sync_source_status" type="object" string="🔄 Đồng bộ" 
+                                class="btn-info"
+                                attrs="{'invisible': ['|', ('request_type', '=', 'normal'), ('approval_state', '!=', 'approved')]}"
+                                confirm="Đồng bộ trạng thái nghiệp vụ nguồn từ văn bản này?"/>
+                        <field name="approval_state" widget="statusbar" 
+                               statusbar_visible="draft,pending,approved,rejected"
+                               attrs="{'invisible': [('request_type', '=', 'normal')]}"/>
+                    </header>
                     <sheet>
                         <div class="oe_read_only" style="font-size:25px">Văn bản đến</div>
                         <div class="oe_button_box" name="button_box">
@@ -20,11 +42,43 @@
                                 </div>
                             </button>
                         </div>
+                        <!-- Approval info banner -->
+                        <div class="alert alert-info" role="alert" style="margin-bottom:0px;" 
+                             attrs="{'invisible': [('request_type', '=', 'normal')]}">
+                            <strong>
+                                <field name="request_type" readonly="1"/>
+                            </strong>
+                        </div>
                         <group col="4" string="Thông tin chung">
                             <field name="ten_van_ban"/>
                             <field name="so_van_ban_den"/>
                             <field name="so_hieu_van_ban"/>
                             <field name="noi_gui_den"/>
+                            <field name="request_type" attrs="{'invisible': [('request_type', '=', 'normal')]}"/>
+                        </group>
+                        <!-- Approval info group -->
+                        <group col="4" string="Thông tin phê duyệt" attrs="{'invisible': [('request_type', '=', 'normal')]}">
+                            <field name="requester_id"/>
+                            <field name="approver_id"/>
+                            <field name="approval_date" attrs="{'invisible': [('approval_state', 'not in', ['approved', 'rejected'])]}"/>
+                            <field name="approval_note" attrs="{'invisible': [('approval_state', 'not in', ['approved', 'rejected'])]}"/>
+                            <field name="van_ban_di_id" attrs="{'invisible': [('van_ban_di_id', '=', False)]}"/>
+                        </group>
+                        <!-- Meeting minutes -->
+                        <group string="Biên bản cuộc họp" attrs="{'invisible': [('request_type', '!=', 'meeting_minutes_approval')]}">
+                            <field name="meeting_subject" readonly="1"/>
+                            <field name="meeting_date" readonly="1"/>
+                            <field name="meeting_minutes" nolabel="1" readonly="0"/>
+                        </group>
+                        <!-- Chữ ký -->
+                        <group col="2" string="Chữ ký phê duyệt" attrs="{'invisible': [('request_type', '=', 'normal')]}">
+                            <group>
+                                <field name="is_signed" invisible="1"/>
+                                <field name="signature_date" attrs="{'invisible': [('is_signed', '=', False)]}"/>
+                            </group>
+                            <group>
+                                <field name="signature" widget="image" class="oe_avatar" attrs="{'invisible': [('is_signed', '=', False)]}"/>
+                            </group>
                         </group>
                         <group col="4" string="Liên kết nghiệp vụ" attrs="{'invisible': [('source_model', '=', False)]}">
                             <field name="source_model" readonly="1"/>
@@ -59,7 +113,11 @@
                             </page>
                         </notebook>
                     </sheet>
-                    
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
                 </form>
             </field>
         </record>
@@ -68,11 +126,14 @@
             <field name="name">van_ban_den</field>
             <field name="model">van_ban_den</field>
             <field name="arch" type="xml">
-                <tree>
+                <tree decoration-warning="approval_state == 'pending'" decoration-success="approval_state == 'approved'" decoration-danger="approval_state == 'rejected'">
                     <field name="ten_van_ban"/>
                     <field name="so_van_ban_den"/>
                     <field name="so_hieu_van_ban"/>
                     <field name="noi_gui_den"/>
+                    <field name="request_type"/>
+                    <field name="approval_state"/>
+                    <field name="approver_id" optional="show"/>
                     <field name="handler_employee_id"/>
                     <field name="signer_employee_id"/>
                     <field name="department_id"/>
@@ -93,11 +154,26 @@
                     <field name="signer_employee_id"/>
                     <field name="department_id"/>
                     <field name="source_model"/>
+                    <field name="request_type"/>
+                    <field name="approval_state"/>
+                    <field name="approver_id"/>
                     <filter name="filter_handler" string="Theo cán bộ xử lý" domain="[('handler_employee_id', '!=', False)]"/>
                     <filter name="filter_signer" string="Theo người ký" domain="[('signer_employee_id', '!=', False)]"/>
                     <filter name="filter_department" string="Theo phòng/ban" domain="[('department_id', '!=', False)]"/>
                     <separator/>
                     <filter name="filter_asset" string="Tài sản / Phòng họp" domain="[('is_asset_document', '=', True)]"/>
+                    <separator/>
+                    <filter name="filter_pending" string="Chờ duyệt" domain="[('approval_state', '=', 'pending')]"/>
+                    <filter name="filter_approved" string="Đã duyệt" domain="[('approval_state', '=', 'approved')]"/>
+                    <filter name="filter_rejected" string="Từ chối" domain="[('approval_state', '=', 'rejected')]"/>
+                    <separator/>
+                    <filter name="filter_booking" string="Duyệt đặt phòng" domain="[('request_type', '=', 'booking_approval')]"/>
+                    <filter name="filter_lending" string="Duyệt mượn thiết bị" domain="[('request_type', '=', 'lending_approval')]"/>
+                    <group expand="0" string="Nhóm theo">
+                        <filter name="group_approval_state" string="Trạng thái duyệt" context="{'group_by': 'approval_state'}"/>
+                        <filter name="group_request_type" string="Loại yêu cầu" context="{'group_by': 'request_type'}"/>
+                        <filter name="group_approver" string="Người duyệt" context="{'group_by': 'approver_id'}"/>
+                    </group>
                 </search>
             </field>
         </record>

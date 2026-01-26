@@ -40,6 +40,19 @@
             <field name="priority">5</field>
         </record>
 
+        <!-- Cron: Task Due/Overdue Notifications -->
+        <record id="cron_van_ban_task_deadline_notifications" model="ir.cron">
+            <field name="name">Nhắc việc văn bản đến hạn/quá hạn</field>
+            <field name="model_id" ref="model_van_ban_task"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_task_deadline_notifications()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+            <field name="nextcall" eval="(datetime.now() + timedelta(days=1)).replace(hour=8, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+        </record>
+
         <!-- Cron: Check Overdue Lending (Legacy - keep for backward compatibility) -->
         <record id="cron_check_overdue_lending" model="ir.cron">
             <field name="name">Kiểm tra mượn tài sản quá hạn</field>

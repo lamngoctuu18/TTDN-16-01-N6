@@ -11,6 +11,7 @@ from . import dnu_maintenance_schedule
 from . import dnu_meeting_room
 from . import dnu_meeting_booking
 from . import van_ban_den_inherit
+from . import van_ban_task_inherit
 from . import user_guide
 from . import hr_employee_extend
 from . import dnu_asset_depreciation
@@ -23,3 +24,4 @@ from . import dnu_asset_automation  # Automation features
 from . import zoom_integration  # Zoom API integration
 from . import google_calendar_integration  # Google Calendar API integration
 from . import openai_integration  # OpenAI ChatGPT integration
+from . import ai_history  # AI history logging

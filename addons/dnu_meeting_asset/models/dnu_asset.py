@@ -167,6 +167,10 @@ class Asset(models.Model):
         compute='_compute_handover_count',
         string='Số biên bản'
     )
+    ai_request_count = fields.Integer(
+        compute='_compute_ai_request_count',
+        string='Số lượt hỏi AI'
+    )
     transfer_count = fields.Integer(
         compute='_compute_transfer_count',
         string='Số lần luân chuyển'
@@ -227,6 +231,14 @@ class Asset(models.Model):
     def _compute_handover_count(self):
         for asset in self:
             asset.handover_count = len(asset.handover_ids)
+
+    def _compute_ai_request_count(self):
+        Request = self.env['ai.request']
+        for asset in self:
+            asset.ai_request_count = Request.search_count([
+                ('context_model', '=', asset._name),
+                ('context_res_id', '=', asset.id),
+            ])
     
     @api.depends('transfer_ids')
     def _compute_transfer_count(self):
@@ -318,6 +330,25 @@ class Asset(models.Model):
             'view_mode': 'tree,form',
             'domain': [('asset_id', '=', self.id)],
         }
+
+    def action_view_ai_history(self):
+        """Xem lịch sử hỏi AI của tài sản"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Lịch sử hỏi AI',
+            'res_model': 'ai.request',
+            'view_mode': 'tree,form',
+            'domain': [
+                ('context_model', '=', self._name),
+                ('context_res_id', '=', self.id),
+            ],
+            'context': {
+                'default_context_model': self._name,
+                'default_context_res_id': self.id,
+                'default_channel': 'asset',
+            },
+        }
     
     def action_ai_suggest_maintenance(self):
         """Mở wizard AI gợi ý bảo trì"""
@@ -331,6 +362,8 @@ class Asset(models.Model):
             'context': {
                 'default_action_type': 'maintenance',
                 'default_asset_id': self.id,
+                'ai_context_model': self._name,
+                'ai_context_res_id': self.id,
             }
         }
     

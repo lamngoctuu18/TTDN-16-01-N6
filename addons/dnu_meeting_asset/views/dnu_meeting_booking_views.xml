@@ -44,8 +44,8 @@
                     <field name="num_attendees"/>
                     <field name="zoom_meeting_id" optional="hide"/>
                     <field name="state" widget="badge" decoration-info="state=='confirmed'" decoration-warning="state=='in_progress'" decoration-success="state=='done'"/>
-                    <button name="action_confirm" string="Duyệt" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'submitted')]}" icon="fa-check"/>
-                    <button name="action_cancel" string="Từ chối" type="object" class="btn-danger" attrs="{'invisible': [('state', '!=', 'submitted')]}" icon="fa-times"/>
+                    <button name="action_direct_approve" string="Duyệt" type="object" class="btn-success" attrs="{'invisible': [('state', '!=', 'submitted')]}"/>
+                    <button name="action_direct_reject" string="Từ chối" type="object" class="btn-danger" attrs="{'invisible': [('state', '!=', 'submitted')]}"/>
                     <field name="has_conflicts" invisible="1"/>
                 </tree>
             </field>
@@ -112,6 +112,16 @@
                             <button class="oe_stat_button" type="object" name="action_view_van_ban_den" icon="fa-file-text-o">
                                 <field name="van_ban_den_count" widget="statinfo" string="Văn bản đến"/>
                             </button>
+                            <button class="oe_stat_button" type="object" name="action_view_ai_history" icon="fa-robot">
+                                <field name="ai_request_count" widget="statinfo" string="AI"/>
+                            </button>
+                            <button class="oe_stat_button" type="object" name="action_send_email_notification" icon="fa-envelope"
+                                    attrs="{'invisible': [('state', '=', 'draft')]}">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Gửi</span>
+                                    <span class="o_stat_text">Email</span>
+                                </div>
+                            </button>
                         </div>
                         
                         <div class="alert alert-danger" role="alert" attrs="{'invisible': [('has_conflicts', '=', False)]}">
@@ -130,46 +140,29 @@
                             </h2>
                         </div>
 
-                        <group>
-                            <group string="Thông tin phòng họp">
-                                <field name="num_attendees"/>
-                                <group string="Tiện nghi" col="3">
-                                    <field name="need_projector"/>
-                                    <field name="need_video_conference"/>
-                                    <field name="need_whiteboard"/>
-                                </group>
-                                <field name="suggested_room_ids" invisible="1"/>
-                                <div class="alert alert-success" attrs="{'invisible': [('suggested_room_ids', '=', [])]}">
-                                    <i class="fa fa-check-circle"/> <b>Gợi ý:</b> Hệ thống đã lọc các phòng phù hợp theo số người và tiện nghi.
-                                </div>
+                        <group col="2">
+                            <group string="Thông tin cuộc họp">
                                 <field name="room_id" options="{'no_create': True}"/>
                                 <field name="meeting_type" widget="radio"/>
                                 <field name="start_datetime"/>
                                 <field name="end_datetime"/>
                                 <field name="duration" widget="float_time"/>
+                                <field name="suggested_room_ids" invisible="1"/>
+                                <div class="text-muted" attrs="{'invisible': [('suggested_room_ids', '=', [])]}">
+                                    <i class="fa fa-check-circle"/> Hệ thống đã lọc phòng phù hợp theo số người và tiện nghi.
+                                </div>
                             </group>
-                            <group string="Người tổ chức">
+                            <group string="Người tổ chức &amp; Quy mô">
                                 <field name="nhan_vien_to_chuc_id" string="Người tổ chức" options="{'no_quick_create': True}" placeholder="Chọn người tổ chức"/>
+                                <field name="num_attendees"/>
+                                <group string="Tiện nghi" col="2">
+                                    <field name="need_projector"/>
+                                    <field name="need_video_conference"/>
+                                    <field name="need_whiteboard"/>
+                                </group>
                             </group>
                         </group>
                         <field name="attendee_ids" invisible="1"/>
-                        <group>
-                            <group string="Bổ sung trang thiết bị">
-                                <div class="alert alert-info mb-2" role="alert">
-                                    <i class="fa fa-info-circle"/> <b>Lưu ý:</b> Chỉ hiển thị thiết bị sẵn sàng và chưa bị mượn trong khoảng thời gian đặt phòng.
-                                </div>
-                                <field name="required_equipment_ids" 
-                                       widget="many2many_tags" 
-                                       nolabel="1"
-                                       context="{'tree_view_ref': 'dnu_meeting_asset.view_dnu_asset_tree_selection'}">
-                                    <tree>
-                                        <field name="name"/>
-                                        <field name="category_id"/>
-                                        <field name="state"/>
-                                    </tree>
-                                </field>
-                            </group>
-                        </group>
                         <notebook>
                             <page string="Sự kiện + Jitsi">
                                 <div class="alert alert-info" role="alert" attrs="{'invisible': [('event_meeting_room_id', '!=', False)]}">
@@ -194,6 +187,21 @@
                             </page>
                             <page string="Mô tả">
                                 <field name="description" placeholder="Mô tả chi tiết về cuộc họp..."/>
+                            </page>
+                            <page string="Thiết bị">
+                                <div class="text-muted mb-2">
+                                    <i class="fa fa-info-circle"/> Chỉ hiển thị thiết bị sẵn sàng và chưa bị mượn trong khoảng thời gian đặt phòng.
+                                </div>
+                                <field name="required_equipment_ids" 
+                                       widget="many2many_tags" 
+                                       nolabel="1"
+                                       context="{'tree_view_ref': 'dnu_meeting_asset.view_dnu_asset_tree_selection'}">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="category_id"/>
+                                        <field name="state"/>
+                                    </tree>
+                                </field>
                             </page>
                             <page string="Zoom Meeting" attrs="{'invisible': [('meeting_type', '!=', 'online')]}">
                                 <div class="alert alert-info" role="alert" attrs="{'invisible': [('zoom_meeting_id', '!=', False)]}">

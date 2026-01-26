@@ -1009,5 +1009,200 @@
             </field>
         </record>
 
+        <!-- Email Template: Booking Created -->
+        <record id="email_template_booking_created" model="mail.template">
+            <field name="name">Meeting Booking: Created</field>
+            <field name="model_id" ref="model_dnu_meeting_booking"/>
+            <field name="subject">📝 Yêu cầu đặt phòng đã được tạo: ${object.subject or object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.organizer_id.work_email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #1f2937;">📝 Yêu cầu đặt phòng đã được tạo</h2>
+
+    <p>Xin chào <strong>${object.organizer_id.name}</strong>,</p>
+
+    <p>Yêu cầu đặt phòng của bạn đã được tạo thành công và đang chờ xử lý.</p>
+
+    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Mã đặt phòng:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Chủ đề:</strong></td>
+                <td style="padding: 5px;">${object.subject}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Thời gian:</strong></td>
+                <td style="padding: 5px;">
+                    ${format_datetime(object.start_datetime, dt_format='dd/MM/yyyy HH:mm')} -
+                    ${format_datetime(object.end_datetime, dt_format='HH:mm')}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Phòng họp:</strong></td>
+                <td style="padding: 5px;">${object.room_id.name}</td>
+            </tr>
+        </table>
+    </div>
+
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=dnu.meeting.booking&amp;view_type=form"
+           style="background-color: #2563eb; color: white; padding: 10px 18px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem chi tiết
+        </a>
+    </p>
+
+    <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Văn bản đến cần xử lý -->
+        <record id="email_template_van_ban_den_processing" model="mail.template">
+            <field name="name">Văn bản đến: Cần xử lý</field>
+            <field name="model_id" ref="model_van_ban_den"/>
+            <field name="subject">📌 Văn bản đến cần xử lý: ${object.ten_van_ban}</field>
+            <field name="email_from">${(user.email or '')|safe}</field>
+            <field name="email_to">${object.handler_employee_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #dc2626;">📌 Văn bản đến cần xử lý</h2>
+
+    <p>Xin chào <strong>${object.handler_employee_id.ho_va_ten}</strong>,</p>
+
+    <p>Bạn được giao xử lý văn bản đến sau:</p>
+
+    <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Số VB đến:</strong></td>
+                <td style="padding: 5px;">${object.so_van_ban_den}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Tên văn bản:</strong></td>
+                <td style="padding: 5px;">${object.ten_van_ban}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Nơi gửi đến:</strong></td>
+                <td style="padding: 5px;">${object.noi_gui_den or ''}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Hạn xử lý:</strong></td>
+                <td style="padding: 5px;">${object.due_date or 'N/A'}</td>
+            </tr>
+        </table>
+    </div>
+
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=van_ban_den&amp;view_type=form"
+           style="background-color: #dc2626; color: white; padding: 10px 18px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem văn bản
+        </a>
+    </p>
+
+    <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Task Due -->
+        <record id="email_template_van_ban_task_due" model="mail.template">
+            <field name="name">Văn bản: Công việc đến hạn</field>
+            <field name="model_id" ref="model_van_ban_task"/>
+            <field name="subject">⏰ Công việc đến hạn hôm nay: ${object.name}</field>
+            <field name="email_from">${(user.email or '')|safe}</field>
+            <field name="email_to">${object.employee_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #f59e0b;">⏰ Công việc đến hạn hôm nay</h2>
+
+    <p>Xin chào <strong>${object.employee_id.ho_va_ten}</strong>,</p>
+
+    <p>Công việc sau đến hạn xử lý hôm nay:</p>
+
+    <div style="background-color: #fffbeb; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Công việc:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Hạn xử lý:</strong></td>
+                <td style="padding: 5px;">${object.deadline or 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Văn bản:</strong></td>
+                <td style="padding: 5px;">${object.van_ban_id.ten_van_ban}</td>
+            </tr>
+        </table>
+    </div>
+
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=van_ban_task&amp;view_type=form"
+           style="background-color: #f59e0b; color: white; padding: 10px 18px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem công việc
+        </a>
+    </p>
+
+    <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
+        <!-- Email Template: Task Overdue -->
+        <record id="email_template_van_ban_task_overdue" model="mail.template">
+            <field name="name">Văn bản: Công việc quá hạn</field>
+            <field name="model_id" ref="model_van_ban_task"/>
+            <field name="subject">⚠️ Công việc quá hạn: ${object.name}</field>
+            <field name="email_from">${(user.email or '')|safe}</field>
+            <field name="email_to">${object.employee_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
+    <h2 style="color: #dc2626;">⚠️ Công việc đã quá hạn</h2>
+
+    <p>Xin chào <strong>${object.employee_id.ho_va_ten}</strong>,</p>
+
+    <p>Công việc sau đã quá hạn xử lý:</p>
+
+    <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <table style="width: 100%;">
+            <tr>
+                <td style="padding: 5px;"><strong>Công việc:</strong></td>
+                <td style="padding: 5px;">${object.name}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Hạn xử lý:</strong></td>
+                <td style="padding: 5px;">${object.deadline or 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px;"><strong>Văn bản:</strong></td>
+                <td style="padding: 5px;">${object.van_ban_id.ten_van_ban}</td>
+            </tr>
+        </table>
+    </div>
+
+    <p style="margin-top: 20px;">
+        <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=van_ban_task&amp;view_type=form"
+           style="background-color: #dc2626; color: white; padding: 10px 18px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Xem công việc
+        </a>
+    </p>
+
+    <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+        Đây là email tự động. Vui lòng không trả lời email này.
+    </p>
+</div>
+            </field>
+        </record>
+
     </data>
 </odoo>

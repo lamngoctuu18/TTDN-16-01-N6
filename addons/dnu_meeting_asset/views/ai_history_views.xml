@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ===================== AI REQUEST VIEWS ===================== -->
+        <record id="view_ai_request_tree" model="ir.ui.view">
+            <field name="name">ai.request.tree</field>
+            <field name="model">ai.request</field>
+            <field name="arch" type="xml">
+                <tree string="Lịch sử hỏi AI" decoration-danger="status == 'error'" decoration-success="status == 'success'">
+                    <field name="create_date" string="Thời gian"/>
+                    <field name="user_id"/>
+                    <field name="channel"/>
+                    <field name="intent"/>
+                    <field name="status" widget="badge"/>
+                    <field name="context_display_name" string="Bản ghi"/>
+                    <field name="model_name" string="Model"/>
+                    <field name="latency_ms" string="Độ trễ (ms)"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_ai_request_form" model="ir.ui.view">
+            <field name="name">ai.request.form</field>
+            <field name="model">ai.request</field>
+            <field name="arch" type="xml">
+                <form string="Lịch sử hỏi AI">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="user_id"/>
+                                <field name="channel"/>
+                                <field name="intent"/>
+                                <field name="status" widget="badge"/>
+                            </group>
+                            <group>
+                                <field name="context_model"/>
+                                <field name="context_display_name" string="Bản ghi"/>
+                                <field name="model_name"/>
+                                <field name="provider"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group>
+                                <field name="latency_ms"/>
+                                <field name="token_in"/>
+                                <field name="token_out"/>
+                                <field name="cost_estimate"/>
+                            </group>
+                            <group>
+                                <field name="rating"/>
+                                <field name="feedback"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Prompt">
+                                <field name="prompt" widget="text"/>
+                            </page>
+                            <page string="Response (Text)">
+                                <field name="response" widget="text"/>
+                            </page>
+                            <page string="Response (HTML)">
+                                <field name="response_html"/>
+                            </page>
+                            <page string="Lỗi" attrs="{'invisible': [('status', '!=', 'error')]}">
+                                <field name="error_message" widget="text"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_ai_request_search" model="ir.ui.view">
+            <field name="name">ai.request.search</field>
+            <field name="model">ai.request</field>
+            <field name="arch" type="xml">
+                <search string="Lịch sử hỏi AI">
+                    <field name="intent"/>
+                    <field name="channel"/>
+                    <field name="status"/>
+                    <field name="user_id"/>
+                    <filter name="success" string="Thành công" domain="[('status', '=', 'success')]"/>
+                    <filter name="error" string="Lỗi" domain="[('status', '=', 'error')]"/>
+                    <separator/>
+                    <filter name="group_by_channel" string="Nhóm theo kênh" context="{'group_by': 'channel'}"/>
+                    <filter name="group_by_user" string="Nhóm theo người hỏi" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_by_intent" string="Nhóm theo mục đích" context="{'group_by': 'intent'}"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_ai_request" model="ir.actions.act_window">
+            <field name="name">Lịch sử hỏi AI</field>
+            <field name="res_model">ai.request</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_ai_request_search"/>
+            <field name="context">{'search_default_success': 1}</field>
+        </record>
+
+        <!-- ===================== AI SESSION VIEWS ===================== -->
+        <record id="view_ai_session_tree" model="ir.ui.view">
+            <field name="name">ai.session.tree</field>
+            <field name="model">ai.session</field>
+            <field name="arch" type="xml">
+                <tree string="Phiên AI">
+                    <field name="name"/>
+                    <field name="channel"/>
+                    <field name="context_display_name" string="Bản ghi"/>
+                    <field name="owner_id"/>
+                    <field name="request_count"/>
+                    <field name="last_activity_at"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_ai_session_form" model="ir.ui.view">
+            <field name="name">ai.session.form</field>
+            <field name="model">ai.session</field>
+            <field name="arch" type="xml">
+                <form string="Phiên AI">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="channel"/>
+                                <field name="owner_id"/>
+                            </group>
+                            <group>
+                                <field name="context_model"/>
+                                <field name="context_display_name" string="Bản ghi"/>
+                                <field name="last_activity_at"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Lượt hỏi">
+                                <field name="request_ids">
+                                    <tree>
+                                        <field name="create_date"/>
+                                        <field name="user_id"/>
+                                        <field name="intent"/>
+                                        <field name="status" widget="badge"/>
+                                        <field name="model_name"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_ai_session" model="ir.actions.act_window">
+            <field name="name">Phiên AI</field>
+            <field name="res_model">ai.session</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+    </data>
+</odoo>

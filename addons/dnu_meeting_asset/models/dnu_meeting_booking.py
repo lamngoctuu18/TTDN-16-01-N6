@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import logging
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta
+
+_logger = logging.getLogger(__name__)
 
 
 class MeetingBooking(models.Model):
@@ -254,10 +257,26 @@ class MeetingBooking(models.Model):
     description = fields.Html(string='Mô tả cuộc họp')
     notes = fields.Text(string='Ghi chú')
     cancellation_reason = fields.Text(string='Lý do hủy')
+    
+    # Email tracking
+    email_send_count = fields.Integer(
+        string='Số lần gửi email',
+        default=0,
+        help='Số lần email thông báo đã được gửi cho booking này'
+    )
+    last_email_sent = fields.Datetime(
+        string='Lần gửi email cuối',
+        help='Thời điểm gửi email thông báo cuối cùng'
+    )
 
     van_ban_den_count = fields.Integer(
         string='Văn bản đến',
         compute='_compute_van_ban_den_count',
+        store=False
+    )
+    ai_request_count = fields.Integer(
+        string='Số lượt hỏi AI',
+        compute='_compute_ai_request_count',
         store=False
     )
 
@@ -269,6 +288,14 @@ class MeetingBooking(models.Model):
                 ('source_res_id', '=', rec.id),
             ])
 
+    def _compute_ai_request_count(self):
+        Request = self.env['ai.request']
+        for rec in self:
+            rec.ai_request_count = Request.search_count([
+                ('context_model', '=', rec._name),
+                ('context_res_id', '=', rec.id),
+            ])
+
     def action_view_van_ban_den(self):
         self.ensure_one()
         action = self.env.ref('quan_ly_van_ban.action_van_ban_den').read()[0]
@@ -278,6 +305,25 @@ class MeetingBooking(models.Model):
             'default_source_res_id': self.id,
         }
         return action
+
+    def action_view_ai_history(self):
+        """Xem lịch sử hỏi AI của booking"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Lịch sử hỏi AI',
+            'res_model': 'ai.request',
+            'view_mode': 'tree,form',
+            'domain': [
+                ('context_model', '=', self._name),
+                ('context_res_id', '=', self.id),
+            ],
+            'context': {
+                'default_context_model': self._name,
+                'default_context_res_id': self.id,
+                'default_channel': 'meeting',
+            },
+        }
 
     def action_create_van_ban_den(self):
         self.ensure_one()
@@ -351,17 +397,17 @@ class MeetingBooking(models.Model):
         ('error', 'Lỗi'),
     ], string='Trạng thái Google Calendar', default='not_synced', readonly=True)
     
-    # Email tracking - TEMPORARILY DISABLED until DB upgrade
-    # reminder_email_sent = fields.Boolean(
-    #     string='Email nhắc đã gửi',
-    #     default=False,
-    #     help='Đánh dấu email nhắc lịch họp đã được gửi'
-    # )
-    # confirmation_email_sent = fields.Boolean(
-    #     string='Email xác nhận đã gửi',
-    #     default=False,
-    #     help='Đánh dấu email xác nhận đã được gửi'
-    # )
+    # Email tracking fields
+    reminder_email_sent = fields.Boolean(
+        string='Email nhắc đã gửi',
+        default=False,
+        help='Đánh dấu email nhắc lịch họp đã được gửi'
+    )
+    confirmation_email_sent = fields.Boolean(
+        string='Email xác nhận đã gửi',
+        default=False,
+        help='Đánh dấu email xác nhận đã được gửi'
+    )
     
     # Calendar integration
     calendar_event_id = fields.Many2one(
@@ -435,6 +481,10 @@ class MeetingBooking(models.Model):
         # Tự động tạo calendar event nếu cần
         if booking.state == 'confirmed':
             booking._create_calendar_event()
+            booking._send_confirmation_email()
+            booking._send_notification_emails()
+        else:
+            booking._send_created_notification_email()
         
         return booking
 
@@ -444,7 +494,7 @@ class MeetingBooking(models.Model):
         important_fields = ['start_datetime', 'end_datetime', 'subject', 'room_id', 'zoom_join_url', 'google_calendar_link']
         
         for booking in self:
-            if booking.state == 'confirmed' and any(key in vals for key in important_fields):
+            if booking.state != 'cancelled' and any(key in vals for key in important_fields):
                 old_values[booking.id] = {
                     'start_datetime': booking.start_datetime,
                     'end_datetime': booking.end_datetime,
@@ -717,13 +767,29 @@ class MeetingBooking(models.Model):
                 )
 
     def action_submit(self):
-        """Gửi yêu cầu đặt phòng"""
+        """Gửi yêu cầu đặt phòng và tạo văn bản đến để trình duyệt"""
         for booking in self:
             booking.write({'state': 'submitted'})
             booking.message_post(body=_('Yêu cầu đặt phòng đã được gửi'))
+            
+            # Tự động tạo văn bản đến yêu cầu duyệt
+            booking._create_approval_van_ban_den()
 
     def action_confirm(self):
         """Xác nhận đặt phòng và tạo phiếu mượn tài sản tự động"""
+        # Nếu đang duyệt từ văn bản đến, cho phép tiếp tục
+        if not self.env.context.get('from_van_ban_approval'):
+            # Kiểm tra xem có văn bản chờ duyệt không
+            for booking in self:
+                pending_van_ban = self.env['van_ban_den'].search([
+                    ('source_model', '=', booking._name),
+                    ('source_res_id', '=', booking.id),
+                    ('request_type', '=', 'booking_approval'),
+                    ('approval_state', '=', 'pending'),
+                ], limit=1)
+                if pending_van_ban:
+                    raise UserError(_('Yêu cầu đặt phòng này đang chờ Ban Giám đốc duyệt.\nVui lòng đợi phê duyệt từ văn bản: %s') % pending_van_ban.ten_van_ban)
+        
         for booking in self:
             # Kiểm tra lại xung đột
             available, conflicts = booking.room_id.check_availability(
@@ -765,6 +831,86 @@ class MeetingBooking(models.Model):
                 'title': _('Thành công'),
                 'message': _('Đã duyệt %s lịch đặt phòng. Email thông báo đã được gửi đến người tổ chức và người tham dự.') % len(self),
                 'type': 'success',
+                'sticky': False,
+            }
+        }
+    
+    def action_direct_approve(self):
+        """Duyệt đặt phòng trực tiếp từ tree view và cập nhật văn bản đến"""
+        for booking in self:
+            if booking.state != 'submitted':
+                continue
+            
+            # Tìm văn bản đến liên quan và cập nhật
+            pending_van_ban = self.env['van_ban_den'].search([
+                ('source_model', '=', booking._name),
+                ('source_res_id', '=', booking.id),
+                ('request_type', '=', 'booking_approval'),
+                ('approval_state', '=', 'pending'),
+            ], limit=1)
+            
+            if pending_van_ban:
+                # Cập nhật văn bản đến thành đã duyệt
+                pending_van_ban.write({
+                    'approval_state': 'approved',
+                    'approval_date': fields.Datetime.now(),
+                })
+                pending_van_ban._create_van_ban_di_response()
+                pending_van_ban._notify_requester(approved=True)
+                pending_van_ban.message_post(body=_('Đã được duyệt từ trang Duyệt đặt phòng bởi %s') % self.env.user.name)
+            
+            # Xác nhận booking
+            booking.with_context(from_van_ban_approval=True).action_confirm()
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Thành công'),
+                'message': _('Đã duyệt %s lịch đặt phòng') % len(self),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+    
+    def action_direct_reject(self):
+        """Từ chối đặt phòng trực tiếp từ tree view và cập nhật văn bản đến"""
+        for booking in self:
+            if booking.state != 'submitted':
+                continue
+            
+            # Tìm văn bản đến liên quan và cập nhật
+            pending_van_ban = self.env['van_ban_den'].search([
+                ('source_model', '=', booking._name),
+                ('source_res_id', '=', booking.id),
+                ('request_type', '=', 'booking_approval'),
+                ('approval_state', '=', 'pending'),
+            ], limit=1)
+            
+            if pending_van_ban:
+                # Cập nhật văn bản đến thành từ chối
+                pending_van_ban.write({
+                    'approval_state': 'rejected',
+                    'approval_date': fields.Datetime.now(),
+                    'approval_note': 'Từ chối từ trang Duyệt đặt phòng',
+                })
+                pending_van_ban._notify_requester(approved=False)
+                pending_van_ban.message_post(body=_('Đã bị từ chối từ trang Duyệt đặt phòng bởi %s') % self.env.user.name)
+            
+            # Hủy booking
+            booking.write({
+                'state': 'cancelled',
+                'cancellation_reason': 'Bị từ chối bởi ' + self.env.user.name,
+            })
+            booking.message_post(body=_('Yêu cầu đặt phòng đã bị từ chối'))
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Đã từ chối'),
+                'message': _('Đã từ chối %s yêu cầu đặt phòng') % len(self),
+                'type': 'warning',
                 'sticky': False,
             }
         }
@@ -854,6 +1000,45 @@ class MeetingBooking(models.Model):
             'view_mode': 'tree,form',
             'domain': [('id', 'in', available_rooms)],
         }
+
+    def _create_approval_van_ban_den(self):
+        """Tạo văn bản đến yêu cầu duyệt đặt phòng và gửi đến Ban Giám đốc"""
+        self.ensure_one()
+        
+        # Kiểm tra xem đã có văn bản yêu cầu duyệt chưa
+        existing = self.env['van_ban_den'].search([
+            ('source_model', '=', self._name),
+            ('source_res_id', '=', self.id),
+            ('request_type', '=', 'booking_approval'),
+            ('approval_state', 'in', ['draft', 'pending']),
+        ], limit=1)
+        
+        if existing:
+            return existing
+        
+        # Tạo văn bản đến yêu cầu duyệt
+        note = 'Yêu cầu duyệt đặt phòng họp:\n'
+        note += '- Phòng: %s\n' % self.room_id.name
+        note += '- Chủ đề: %s\n' % self.subject
+        note += '- Thời gian: %s - %s\n' % (
+            self.start_datetime.strftime('%d/%m/%Y %H:%M') if self.start_datetime else '',
+            self.end_datetime.strftime('%d/%m/%Y %H:%M') if self.end_datetime else ''
+        )
+        note += '- Số người: %s\n' % self.num_attendees
+        note += '- Người tổ chức: %s\n' % self.organizer_name
+        
+        if self.required_equipment_ids:
+            note += '- Thiết bị cần mượn: %s\n' % ', '.join(self.required_equipment_ids.mapped('name'))
+        
+        van_ban = self.env['van_ban_den'].create_approval_request(
+            source_record=self,
+            request_type='booking_approval',
+            note=note,
+        )
+        
+        self.message_post(body=_('Đã tạo văn bản yêu cầu duyệt: %s') % van_ban.ten_van_ban)
+        
+        return van_ban
 
     def _create_calendar_event(self):
         """Tạo sự kiện lịch"""
@@ -1008,19 +1193,151 @@ class MeetingBooking(models.Model):
                 'description': booking.description or '',
             })
 
+    def _get_admin_emails(self):
+        """Lấy danh sách email admin để CC"""
+        admin_emails = []
+        # Lấy từ System Parameters nếu có
+        admin_email_param = self.env['ir.config_parameter'].sudo().get_param('dnu_meeting_asset.admin_notification_email')
+        if admin_email_param:
+            admin_emails.extend([e.strip() for e in admin_email_param.split(',') if e.strip()])
+        # Mặc định thêm email admin hệ thống
+        admin_users = self.env['res.users'].sudo().search([('groups_id', 'in', self.env.ref('base.group_system').id)])
+        for user in admin_users:
+            if user.email and user.email not in admin_emails:
+                admin_emails.append(user.email)
+        return admin_emails
+
+    def _send_email_with_tracking(self, template_xmlid, recipient_emails, event_type='notification'):
+        """Gửi email và lưu lịch sử"""
+        template = self.env.ref(template_xmlid, raise_if_not_found=False)
+        if not template:
+            _logger.warning(f"Email template {template_xmlid} không tồn tại")
+            return False
+        
+        sent_count = 0
+        failed_count = 0
+        for email in recipient_emails:
+            if not email:
+                continue
+            try:
+                template.send_mail(self.id, force_send=True, email_values={
+                    'email_to': email
+                })
+                sent_count += 1
+                _logger.info(f"[Booking {self.name}] Email {event_type} đã gửi thành công đến {email}")
+            except Exception as e:
+                failed_count += 1
+                _logger.error(f"[Booking {self.name}] Lỗi gửi email {event_type} đến {email}: {str(e)}")
+        
+        if sent_count > 0:
+            # Cập nhật tracking fields
+            self.write({
+                'email_send_count': self.email_send_count + sent_count,
+                'last_email_sent': fields.Datetime.now(),
+            })
+            self.message_post(
+                body=_('📧 [%s] Đã gửi %d/%d email thông báo thành công') % (event_type.upper(), sent_count, sent_count + failed_count),
+                message_type='notification'
+            )
+            _logger.info(f"[Booking {self.name}] Gửi {sent_count}/{sent_count + failed_count} email {event_type} thành công")
+        elif failed_count > 0:
+            self.message_post(
+                body=_('⚠️ [%s] Gửi email thất bại (%d email)') % (event_type.upper(), failed_count),
+                message_type='notification'
+            )
+        return sent_count > 0
+
     def _send_confirmation_email(self):
-        """Gửi email xác nhận"""
+        """Gửi email xác nhận cho người tổ chức, người tham dự và admin"""
         template = self.env.ref('dnu_meeting_asset.email_template_booking_confirmation', raise_if_not_found=False)
-        if template:
-            for booking in self:
-                template.send_mail(booking.id, force_send=True)
+        if not template:
+            return
+        
+        for booking in self:
+            recipients = []
+            
+            # Email người tổ chức
+            if booking.organizer_id and booking.organizer_id.work_email:
+                recipients.append(booking.organizer_id.work_email)
+            
+            # Email người tham dự
+            for attendee in booking.attendee_ids:
+                if attendee.work_email and attendee.work_email not in recipients:
+                    recipients.append(attendee.work_email)
+            
+            # Email admin
+            admin_emails = booking._get_admin_emails()
+            for email in admin_emails:
+                if email not in recipients:
+                    recipients.append(email)
+            
+            # Gửi email
+            booking._send_email_with_tracking(
+                'dnu_meeting_asset.email_template_booking_confirmation',
+                recipients,
+                'XÁC NHẬN BOOKING'
+            )
 
     def _send_cancellation_email(self):
-        """Gửi email thông báo hủy"""
+        """Gửi email thông báo hủy cho tất cả người liên quan"""
         template = self.env.ref('dnu_meeting_asset.email_template_booking_cancellation', raise_if_not_found=False)
-        if template:
-            for booking in self:
-                template.send_mail(booking.id, force_send=True)
+        if not template:
+            return
+        
+        for booking in self:
+            recipients = []
+            
+            # Email người tổ chức
+            if booking.organizer_id and booking.organizer_id.work_email:
+                recipients.append(booking.organizer_id.work_email)
+            
+            # Email người tham dự
+            for attendee in booking.attendee_ids:
+                if attendee.work_email and attendee.work_email not in recipients:
+                    recipients.append(attendee.work_email)
+            
+            # Email admin
+            admin_emails = booking._get_admin_emails()
+            for email in admin_emails:
+                if email not in recipients:
+                    recipients.append(email)
+            
+            # Gửi email
+            booking._send_email_with_tracking(
+                'dnu_meeting_asset.email_template_booking_cancellation',
+                recipients,
+                'HỦY BOOKING'
+            )
+
+    def _send_created_notification_email(self):
+        """Gửi email thông báo tạo booking cho người tổ chức, người tham dự và admin"""
+        self.ensure_one()
+        if self.state == 'cancelled':
+            return
+        
+        recipients = []
+        
+        # Email người tổ chức
+        if self.organizer_id and self.organizer_id.work_email:
+            recipients.append(self.organizer_id.work_email)
+        
+        # Email người tham dự
+        for attendee in self.attendee_ids:
+            if attendee.work_email and attendee.work_email not in recipients:
+                recipients.append(attendee.work_email)
+        
+        # Email admin
+        admin_emails = self._get_admin_emails()
+        for email in admin_emails:
+            if email not in recipients:
+                recipients.append(email)
+        
+        # Gửi email
+        self._send_email_with_tracking(
+            'dnu_meeting_asset.email_template_booking_created',
+            recipients,
+            'TẠO BOOKING'
+        )
 
     @api.model
     def _cron_auto_checkout(self):
@@ -1332,61 +1649,70 @@ class MeetingBooking(models.Model):
     # ==================== EMAIL NOTIFICATION METHODS ====================
     
     def _send_notification_emails(self):
-        """Gửi email thông báo đến tất cả người tham dự"""
+        """Gửi email thông báo đến tất cả người tham dự và admin"""
         self.ensure_one()
         
         # Kiểm tra xem đã gửi email chưa (nếu field tồn tại)
         if hasattr(self, 'confirmation_email_sent') and self.confirmation_email_sent:
             return
         
-        template = self.env.ref('dnu_meeting_asset.email_template_booking_confirmation', raise_if_not_found=False)
-        if not template:
-            return
+        recipients = []
         
-        # Gửi email cho người tổ chức
+        # Email người tổ chức
         if self.organizer_id and self.organizer_id.work_email:
-            template.send_mail(self.id, force_send=True, email_values={
-                'email_to': self.organizer_id.work_email
-            })
+            recipients.append(self.organizer_id.work_email)
         
-        # Gửi email cho từng người tham dự
+        # Email người tham dự
         for attendee in self.attendee_ids:
-            if attendee.work_email:
-                template.send_mail(self.id, force_send=False, email_values={
-                    'email_to': attendee.work_email
-                })
+            if attendee.work_email and attendee.work_email not in recipients:
+                recipients.append(attendee.work_email)
+        
+        # Email admin
+        admin_emails = self._get_admin_emails()
+        for email in admin_emails:
+            if email not in recipients:
+                recipients.append(email)
+        
+        # Gửi email
+        self._send_email_with_tracking(
+            'dnu_meeting_asset.email_template_booking_confirmation',
+            recipients,
+            'THÔNG BÁO BOOKING'
+        )
         
         # Đánh dấu đã gửi (nếu field tồn tại)
         if hasattr(self, 'confirmation_email_sent'):
             self.write({'confirmation_email_sent': True})
-        
-        self.message_post(body=_('📧 Đã gửi email thông báo đến %s người') % (len(self.attendee_ids) + 1))
     
     def _send_update_notification_email(self):
-        """Gửi email thông báo khi có cập nhật"""
+        """Gửi email thông báo khi có cập nhật cho người tổ chức, người tham dự và admin"""
         self.ensure_one()
-        
-        if self.state != 'confirmed':
+        if self.state == 'cancelled':
             return
         
-        template = self.env.ref('dnu_meeting_asset.email_template_meeting_update', raise_if_not_found=False)
-        if not template:
-            return
+        recipients = []
         
-        # Gửi cho người tổ chức
+        # Email người tổ chức
         if self.organizer_id and self.organizer_id.work_email:
-            template.send_mail(self.id, force_send=True, email_values={
-                'email_to': self.organizer_id.work_email
-            })
+            recipients.append(self.organizer_id.work_email)
         
-        # Gửi cho người tham dự
+        # Email người tham dự
         for attendee in self.attendee_ids:
-            if attendee.work_email:
-                template.send_mail(self.id, force_send=False, email_values={
-                    'email_to': attendee.work_email
-                })
+            if attendee.work_email and attendee.work_email not in recipients:
+                recipients.append(attendee.work_email)
         
-        self.message_post(body=_('📧 Đã gửi email thông báo cập nhật'))
+        # Email admin
+        admin_emails = self._get_admin_emails()
+        for email in admin_emails:
+            if email not in recipients:
+                recipients.append(email)
+        
+        # Gửi email
+        self._send_email_with_tracking(
+            'dnu_meeting_asset.email_template_meeting_update',
+            recipients,
+            'CẬP NHẬT BOOKING'
+        )
     
     @api.model
     def _cron_send_email_reminders(self):
@@ -1409,34 +1735,90 @@ class MeetingBooking(models.Model):
         
         bookings = self.search(domain)
         
-        template = self.env.ref('dnu_meeting_asset.email_template_meeting_reminder', raise_if_not_found=False)
-        if not template:
-            return
-        
         for booking in bookings:
             try:
-                # Gửi cho người tổ chức
-                if booking.organizer_id and booking.organizer_id.work_email:
-                    template.send_mail(booking.id, force_send=True, email_values={
-                        'email_to': booking.organizer_id.work_email
-                    })
+                recipients = []
                 
-                # Gửi cho người tham dự
+                # Email người tổ chức
+                if booking.organizer_id and booking.organizer_id.work_email:
+                    recipients.append(booking.organizer_id.work_email)
+                
+                # Email người tham dự
                 for attendee in booking.attendee_ids:
-                    if attendee.work_email:
-                        template.send_mail(booking.id, force_send=False, email_values={
-                            'email_to': attendee.work_email
-                        })
+                    if attendee.work_email and attendee.work_email not in recipients:
+                        recipients.append(attendee.work_email)
+                
+                # Email admin
+                admin_emails = booking._get_admin_emails()
+                for email in admin_emails:
+                    if email not in recipients:
+                        recipients.append(email)
+                
+                # Gửi email
+                if recipients:
+                    booking._send_email_with_tracking(
+                        'dnu_meeting_asset.email_template_meeting_reminder',
+                        recipients,
+                        'NHẮC LỊCH HỌP'
+                    )
                 
                 # Đánh dấu đã gửi (nếu field tồn tại)
                 if 'reminder_email_sent' in booking._fields:
                     booking.write({'reminder_email_sent': True})
                 
-                booking.message_post(body=_('⏰ Đã gửi email nhắc lịch họp đến %s người') % (len(booking.attendee_ids) + 1))
-                
             except Exception as e:
                 _logger.error(f"Error sending reminder email for booking {booking.name}: {str(e)}")
                 continue
+
+    def action_send_email_notification(self):
+        """Button để gửi email thông báo thủ công"""
+        self.ensure_one()
+        recipients = []
+        
+        # Email người tổ chức
+        if self.organizer_id and self.organizer_id.work_email:
+            recipients.append(self.organizer_id.work_email)
+        
+        # Email người tham dự
+        for attendee in self.attendee_ids:
+            if attendee.work_email and attendee.work_email not in recipients:
+                recipients.append(attendee.work_email)
+        
+        # Email admin
+        admin_emails = self._get_admin_emails()
+        for email in admin_emails:
+            if email not in recipients:
+                recipients.append(email)
+        
+        if not recipients:
+            raise UserError(_('Không có người nhận email. Vui lòng kiểm tra email của người tổ chức và người tham dự.'))
+        
+        # Gửi email
+        if self.state == 'confirmed':
+            template_id = 'dnu_meeting_asset.email_template_booking_confirmation'
+            event_type = 'XÁC NHẬN BOOKING'
+        elif self.state == 'cancelled':
+            template_id = 'dnu_meeting_asset.email_template_booking_cancellation'
+            event_type = 'HỦY BOOKING'
+        else:
+            template_id = 'dnu_meeting_asset.email_template_booking_created'
+            event_type = 'TẠO BOOKING'
+        
+        sent = self._send_email_with_tracking(template_id, recipients, event_type)
+        
+        if sent:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Thành công'),
+                    'message': _('Đã gửi email thông báo đến %d người: %s') % (len(recipients), ', '.join(recipients)),
+                    'type': 'success',
+                    'sticky': False,
+                }
+            }
+        else:
+            raise UserError(_('Không thể gửi email. Vui lòng kiểm tra cấu hình email.'))
     
     def _get_attendee_emails(self):
         """Lấy danh sách email của người tham dự"""
@@ -1469,6 +1851,8 @@ class MeetingBooking(models.Model):
                 'default_action_type': 'summary',
                 'default_booking_id': self.id,
                 'default_meeting_notes': self.notes,
+                'ai_context_model': self._name,
+                'ai_context_res_id': self.id,
             }
         }
     
@@ -1486,5 +1870,7 @@ class MeetingBooking(models.Model):
                 'default_meeting_subject': self.subject,
                 'default_meeting_description': self.description,
                 'default_duration_hours': self.duration or 1.0,
+                'ai_context_model': self._name,
+                'ai_context_res_id': self.id,
             }
         }

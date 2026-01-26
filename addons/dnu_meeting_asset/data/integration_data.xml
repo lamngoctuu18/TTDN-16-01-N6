@@ -2,6 +2,13 @@
 <odoo>
     <data noupdate="0">
         
+        <!-- ==================== EMAIL NOTIFICATION CONFIGURATION ==================== -->
+        <!-- Cấu hình email admin nhận thông báo -->
+        <record id="config_admin_notification_email" model="ir.config_parameter">
+            <field name="key">dnu_meeting_asset.admin_notification_email</field>
+            <field name="value">lamngoctuk55@gmail.com</field>
+        </record>
+
         <!-- Cấu hình tích hợp Zoom mặc định -->
         <!-- IMPORTANT: Configure Zoom credentials via Odoo UI: Settings > Zoom Integration -->
         <record id="zoom_integration_default" model="zoom.integration">

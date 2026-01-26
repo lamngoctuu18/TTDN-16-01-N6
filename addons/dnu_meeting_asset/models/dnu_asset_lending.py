@@ -344,9 +344,53 @@ class AssetLending(models.Model):
                     lending.assigned_person_id.name
                 )
             else:
-                # Không cần phê duyệt, chuyển thẳng sang requested
+                # Không cần phê duyệt từ người quản lý tài sản
+                # Nhưng vẫn cần duyệt từ Ban Giám đốc
                 lending.write({'state': 'requested'})
-                lending.message_post(body=_('Yêu cầu mượn tài sản đã được gửi'))
+                lending._create_approval_van_ban_den()
+                lending.message_post(body=_('Yêu cầu mượn tài sản đã được gửi đến Ban Giám đốc để duyệt'))
+    
+    def _create_approval_van_ban_den(self):
+        """Tạo văn bản đến yêu cầu duyệt mượn thiết bị và gửi đến Ban Giám đốc"""
+        self.ensure_one()
+        
+        # Nếu là phiếu mượn tự động từ booking, skip việc tạo văn bản riêng
+        # (văn bản đã được tạo từ booking)
+        if self.booking_id:
+            return None
+        
+        # Kiểm tra xem đã có văn bản yêu cầu duyệt chưa
+        existing = self.env['van_ban_den'].search([
+            ('source_model', '=', self._name),
+            ('source_res_id', '=', self.id),
+            ('request_type', '=', 'lending_approval'),
+            ('approval_state', 'in', ['draft', 'pending']),
+        ], limit=1)
+        
+        if existing:
+            return existing
+        
+        # Tạo văn bản đến yêu cầu duyệt
+        note = 'Yêu cầu duyệt mượn thiết bị:\n'
+        note += '- Tài sản: %s\n' % self.asset_id.name
+        note += '- Người mượn: %s\n' % self.borrower_name
+        note += '- Thời gian mượn: %s - %s\n' % (
+            self.date_borrow.strftime('%d/%m/%Y %H:%M') if self.date_borrow else '',
+            self.date_expected_return.strftime('%d/%m/%Y %H:%M') if self.date_expected_return else ''
+        )
+        note += '- Mục đích: %s\n' % dict(self._fields['purpose'].selection).get(self.purpose, '')
+        if self.purpose_note:
+            note += '- Chi tiết: %s\n' % self.purpose_note
+        
+        van_ban = self.env['van_ban_den'].create_approval_request(
+            source_record=self,
+            request_type='lending_approval',
+            note=note,
+        )
+        
+        self.message_post(body=_('Đã tạo văn bản yêu cầu duyệt: %s') % van_ban.ten_van_ban)
+        
+        return van_ban
     
     def _create_handover_document(self):
         """Tạo biên bản bàn giao tự động"""
@@ -398,17 +442,30 @@ class AssetLending(models.Model):
             )
     
     def action_approve_lending(self):
-        """Người quản lý tài sản ký duyệt cho mượn"""
+        """Người quản lý tài sản hoặc Ban Giám đốc ký duyệt cho mượn"""
         for lending in self:
-            # Kiểm tra quyền
-            current_user = self.env.user
-            if lending.assigned_person_id.user_id != current_user:
-                raise UserError(_('Chỉ có %s mới có quyền ký duyệt!') % lending.assigned_person_id.name)
+            # Nếu đang duyệt từ văn bản đến, bỏ qua kiểm tra quyền người quản lý tài sản
+            if not self.env.context.get('from_van_ban_approval'):
+                # Kiểm tra xem có văn bản chờ duyệt không
+                pending_van_ban = self.env['van_ban_den'].search([
+                    ('source_model', '=', lending._name),
+                    ('source_res_id', '=', lending.id),
+                    ('request_type', '=', 'lending_approval'),
+                    ('approval_state', '=', 'pending'),
+                ], limit=1)
+                if pending_van_ban:
+                    raise UserError(_('Yêu cầu mượn thiết bị này đang chờ Ban Giám đốc duyệt.\nVui lòng đợi phê duyệt từ văn bản: %s') % pending_van_ban.ten_van_ban)
+                
+                # Kiểm tra quyền nếu cần phê duyệt từ người quản lý
+                if lending.state == 'pending_approval' and lending.assigned_person_id:
+                    current_user = self.env.user
+                    if lending.assigned_person_id.user_id != current_user:
+                        raise UserError(_('Chỉ có %s mới có quyền ký duyệt!') % lending.assigned_person_id.name)
             
-            if lending.state != 'pending_approval':
+            if lending.state not in ['pending_approval', 'requested']:
                 raise UserError(_('Phiếu mượn không ở trạng thái chờ phê duyệt!'))
             
-            # Ký duyệt biên bản
+            # Ký duyệt biên bản nếu có
             if lending.handover_id:
                 lending.handover_id.action_submit()
                 lending.handover_id.action_approve()
@@ -417,10 +474,10 @@ class AssetLending(models.Model):
                 'state': 'approved',
                 'approval_status': 'approved',
                 'approval_date': fields.Datetime.now(),
-                'approved_by': current_user.id,
+                'approved_by': self.env.user.id,
             })
             lending.message_post(
-                body=_('Yêu cầu mượn đã được %s ký duyệt') % current_user.name
+                body=_('Yêu cầu mượn đã được %s ký duyệt') % self.env.user.name
             )
             
             # Gửi thông báo cho người mượn

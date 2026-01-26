@@ -134,6 +134,7 @@ Phát triển bởi: Nhóm Sinh viên FIT-DNU
         'views/oauth_templates.xml',
         'views/openai_views.xml',
         'views/ai_integration_views.xml',
+        'views/ai_history_views.xml',
         
         # Views - HR Integration
         'views/hr_employee_views.xml',

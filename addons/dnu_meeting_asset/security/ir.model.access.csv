@@ -52,3 +52,7 @@ access_ai_meeting_wizard_user,access.ai.meeting.wizard.user,model_ai_meeting_wiz
 access_ai_hr_wizard_user,access.ai.hr.wizard.user,model_ai_hr_wizard,base.group_user,1,1,1,1
 access_dnu_user_guide_user,access.dnu.user.guide.user,model_dnu_user_guide,base.group_user,1,0,0,0
 access_dnu_user_guide_admin,access.dnu.user.guide.admin,model_dnu_user_guide,base.group_system,1,1,1,1
+access_ai_session_user,access.ai.session.user,model_ai_session,base.group_user,1,0,1,0
+access_ai_session_manager,access.ai.session.manager,model_ai_session,group_facility_staff,1,1,1,1
+access_ai_request_user,access.ai.request.user,model_ai_request,base.group_user,1,0,1,0
+access_ai_request_manager,access.ai.request.manager,model_ai_request,group_facility_staff,1,1,1,1

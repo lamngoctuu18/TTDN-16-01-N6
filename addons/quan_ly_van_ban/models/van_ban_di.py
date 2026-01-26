@@ -12,6 +12,7 @@ class VanBanDi(models.Model):
     ten_van_ban = fields.Char("Tên văn bản", required=True)
     so_hieu_van_ban = fields.Char("Số hiệu văn bản", required=True)
     noi_nhan = fields.Char("Nơi nhận")
+    noi_dung = fields.Html("Nội dung văn bản", help="Nội dung chi tiết văn bản đi (biên bản, phê duyệt...)")
 
     handler_employee_id = fields.Many2one('nhan_vien', string="Cán bộ xử lý")
     signer_employee_id = fields.Many2one('nhan_vien', string="Người ký")

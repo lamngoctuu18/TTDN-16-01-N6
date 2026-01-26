@@ -102,6 +102,10 @@ class HrEmployeeExtend(models.Model):
         compute='_compute_maintenance_count',
         string='Số phiếu bảo trì'
     )
+    ai_request_count = fields.Integer(
+        compute='_compute_ai_request_count',
+        string='Số lượt hỏi AI'
+    )
 
     @api.depends('nhan_vien_id.lich_su_cong_tac_ids', 'nhan_vien_id.lich_su_cong_tac_ids.loai_chuc_vu')
     def _compute_don_vi_chuc_vu_chinh(self):
@@ -149,6 +153,14 @@ class HrEmployeeExtend(models.Model):
     def _compute_maintenance_count(self):
         for employee in self:
             employee.maintenance_count = len(employee.maintenance_reported_ids) + len(employee.maintenance_assigned_ids)
+
+    def _compute_ai_request_count(self):
+        Request = self.env['ai.request']
+        for employee in self:
+            employee.ai_request_count = Request.search_count([
+                ('context_model', '=', employee._name),
+                ('context_res_id', '=', employee.id),
+            ])
 
     def action_view_assets(self):
         """Xem tài sản được gán cho nhân viên"""
@@ -198,6 +210,38 @@ class HrEmployeeExtend(models.Model):
             'context': {'default_organizer_id': self.id},
         }
 
+    def action_view_ai_history(self):
+        """Xem lịch sử hỏi AI của nhân sự"""
+        self.ensure_one()
+        return {
+            'name': _('Lịch sử hỏi AI - %s') % self.name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'ai.request',
+            'view_mode': 'tree,form',
+            'domain': [('context_model', '=', self._name), ('context_res_id', '=', self.id)],
+            'context': {
+                'default_context_model': self._name,
+                'default_context_res_id': self.id,
+                'default_channel': 'hr',
+            },
+        }
+
+    def action_ai_hr_chat(self):
+        """Mở AI Nhân sự cho nhân viên hiện tại"""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': '👥 AI Nhân sự',
+            'res_model': 'ai.hr.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_action_type': 'chat',
+                'ai_context_model': self._name,
+                'ai_context_res_id': self.id,
+            },
+        }
+
     def action_view_maintenance(self):
         """Xem phiếu bảo trì liên quan"""
         self.ensure_one()
@@ -210,6 +254,15 @@ class HrEmployeeExtend(models.Model):
         }
 
 
+    def _sync_nhan_vien_from_hr(self, fields_changed=None):
+        """Đồng bộ dữ liệu từ hr.employee sang nhan_vien"""
+        for emp in self:
+            nv = emp.nhan_vien_id
+            if not nv:
+                continue
+            nv.with_context(sync_from_hr_employee=True)._sync_from_hr_employee(emp, fields_changed=fields_changed)
+
+
     # ---------------------
     # Đồng bộ với nhan_vien
     # ---------------------
@@ -220,6 +273,8 @@ class HrEmployeeExtend(models.Model):
         for emp in employees:
             if emp.nhan_vien_id and not emp.nhan_vien_id.hr_employee_id:
                 emp.nhan_vien_id.hr_employee_id = emp
+        if not self.env.context.get('sync_from_nhan_vien'):
+            employees._sync_nhan_vien_from_hr(fields_changed={'name', 'work_email', 'work_phone', 'birthday', 'place_of_birth', 'identification_id', 'department_id', 'job_id', 'nhan_vien_id'})
         return employees
 
     def write(self, vals):
@@ -229,6 +284,10 @@ class HrEmployeeExtend(models.Model):
             for emp in self:
                 if emp.nhan_vien_id and not emp.nhan_vien_id.hr_employee_id:
                     emp.nhan_vien_id.hr_employee_id = emp
+        if not self.env.context.get('sync_from_nhan_vien'):
+            sync_fields = {'name', 'work_email', 'work_phone', 'birthday', 'place_of_birth', 'identification_id', 'department_id', 'job_id', 'nhan_vien_id'}
+            if sync_fields.intersection(vals.keys()):
+                self._sync_nhan_vien_from_hr(fields_changed=set(vals.keys()))
         return res
 
 
@@ -274,12 +333,89 @@ class NhanVienExtend(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        if set(vals).intersection({'ho_va_ten', 'ho_ten_dem', 'ten', 'email', 'so_dien_thoai', 'que_quan', 'lich_su_cong_tac_ids'}):
-            self._sync_hr_employee_fields()
+        if self.env.context.get('sync_from_hr_employee'):
+            return res
+        if set(vals).intersection({'ho_va_ten', 'ho_ten_dem', 'ten', 'email', 'so_dien_thoai', 'que_quan', 'ngay_sinh', 'ma_dinh_danh', 'lich_su_cong_tac_ids'}):
+            self.with_context(sync_from_nhan_vien=True)._sync_hr_employee_fields()
         if 'hr_employee_id' not in vals:
             # Nếu chưa liên kết, đảm bảo tạo
             self._ensure_hr_employee()
         return res
+
+    def _get_or_create_nhan_su_don_vi_from_hr(self, department):
+        """Tìm hoặc tạo don_vi từ hr.department"""
+        if not department:
+            return False
+        DonVi = self.env['don_vi']
+        dv = DonVi.search([('ten_don_vi', '=', department.name)], limit=1)
+        if not dv:
+            dv = DonVi.create({
+                'ten_don_vi': department.name,
+                'ma_don_vi': getattr(department, 'code', False) or ('DV-%s' % department.id),
+            })
+        return dv
+
+    def _get_or_create_nhan_su_chuc_vu_from_hr(self, job):
+        """Tìm hoặc tạo chuc_vu từ hr.job"""
+        if not job:
+            return False
+        ChucVu = self.env['chuc_vu']
+        cv = ChucVu.search([('ten_chuc_vu', '=', job.name)], limit=1)
+        if not cv:
+            cv = ChucVu.create({
+                'ten_chuc_vu': job.name,
+                'ma_chuc_vu': 'CV-%s' % job.id,
+            })
+        return cv
+
+    def _sync_from_hr_employee(self, hr_employee, fields_changed=None):
+        """Nhận dữ liệu từ hr.employee và cập nhật nhan_vien"""
+        for nv in self:
+            emp = hr_employee or nv.hr_employee_id
+            if not emp:
+                continue
+            vals = {}
+            if not fields_changed or 'work_email' in fields_changed:
+                if emp.work_email and emp.work_email != nv.email:
+                    vals['email'] = emp.work_email
+            if not fields_changed or 'work_phone' in fields_changed:
+                if emp.work_phone and emp.work_phone != nv.so_dien_thoai:
+                    vals['so_dien_thoai'] = emp.work_phone
+            if not fields_changed or 'birthday' in fields_changed:
+                if emp.birthday and emp.birthday != nv.ngay_sinh:
+                    vals['ngay_sinh'] = emp.birthday
+            if not fields_changed or 'place_of_birth' in fields_changed:
+                if emp.place_of_birth and emp.place_of_birth != nv.que_quan:
+                    vals['que_quan'] = emp.place_of_birth
+            if not fields_changed or 'identification_id' in fields_changed:
+                if emp.identification_id and emp.identification_id != nv.ma_dinh_danh:
+                    vals['ma_dinh_danh'] = emp.identification_id
+            if not fields_changed or 'name' in fields_changed:
+                if emp.name and (not nv.ho_ten_dem or not nv.ten):
+                    parts = emp.name.strip().split()
+                    if parts:
+                        vals['ten'] = parts[-1]
+                        vals['ho_ten_dem'] = ' '.join(parts[:-1])
+
+            if vals:
+                nv.write(vals)
+
+            # Đồng bộ phòng ban & chức vụ về lịch sử công tác chính
+            if not fields_changed or {'department_id', 'job_id'}.intersection(fields_changed):
+                don_vi = nv._get_or_create_nhan_su_don_vi_from_hr(emp.department_id)
+                chuc_vu = nv._get_or_create_nhan_su_chuc_vu_from_hr(emp.job_id)
+                if don_vi or chuc_vu:
+                    lstc_chinh = nv.lich_su_cong_tac_ids.filtered(lambda x: x.loai_chuc_vu == 'Chính')
+                    lstc_vals = {
+                        'don_vi_id': don_vi.id if don_vi else False,
+                        'chuc_vu_id': chuc_vu.id if chuc_vu else False,
+                        'loai_chuc_vu': 'Chính',
+                        'nhan_vien_id': nv.id,
+                    }
+                    if lstc_chinh:
+                        lstc_chinh[0].write(lstc_vals)
+                    else:
+                        self.env['lich_su_cong_tac'].create(lstc_vals)
     
     def _get_or_create_hr_department(self, don_vi):
         """Tìm hoặc tạo hr.department từ don_vi"""
@@ -343,6 +479,9 @@ class NhanVienExtend(models.Model):
                 'nhan_vien_id': nv.id,
                 'work_email': nv.email,
                 'work_phone': nv.so_dien_thoai,
+                'identification_id': nv.ma_dinh_danh,
+                'birthday': nv.ngay_sinh,
+                'place_of_birth': nv.que_quan,
                 'company_id': self.env.company.id,
             }
             
@@ -374,6 +513,9 @@ class NhanVienExtend(models.Model):
                 'name': name,
                 'work_email': nv.email,
                 'work_phone': nv.so_dien_thoai,
+                'identification_id': nv.ma_dinh_danh,
+                'birthday': nv.ngay_sinh,
+                'place_of_birth': nv.que_quan,
             }
             
             # Đồng bộ department và job từ lịch sử công tác chính
@@ -398,7 +540,7 @@ class NhanVienExtend(models.Model):
             # Tránh ghi None nếu không có dữ liệu mới
             cleaned_vals = {k: v for k, v in update_vals.items() if v}
             if cleaned_vals:
-                nv.hr_employee_id.write(cleaned_vals)
+                nv.hr_employee_id.with_context(sync_from_nhan_vien=True).write(cleaned_vals)
 
     def action_view_assets(self):
         """Xem tài sản thông qua hr.employee"""

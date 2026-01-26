@@ -25,6 +25,15 @@
                     <button name="action_view_bookings" type="object" class="oe_stat_button" icon="fa-calendar">
                         <field name="booking_count" widget="statinfo" string="Đặt phòng"/>
                     </button>
+                    <!-- Nút xem lịch sử AI -->
+                    <button name="action_view_ai_history" type="object" class="oe_stat_button" icon="fa-robot">
+                        <field name="ai_request_count" widget="statinfo" string="AI"/>
+                    </button>
+                    <!-- Nút hỏi AI Nhân sự -->
+                    <button name="action_ai_hr_chat" type="object" class="oe_stat_button" icon="fa-comments">
+                        <span class="o_stat_text">AI</span>
+                        <span class="o_stat_text">Nhân sự</span>
+                    </button>
                     <!-- Nút xem bảo trì -->
                     <button name="action_view_maintenance" type="object" class="oe_stat_button" icon="fa-wrench">
                         <field name="maintenance_count" widget="statinfo" string="Bảo trì"/>

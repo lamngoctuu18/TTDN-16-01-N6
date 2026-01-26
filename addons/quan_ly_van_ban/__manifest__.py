@@ -27,6 +27,8 @@
         'security/groups.xml',
         'security/ir.model.access.csv',
         'data/cron.xml',
+        'data/sequence.xml',
+        'wizards/van_ban_sign_wizard_views.xml',
         'views/van_ban_den.xml',
         'views/van_ban_di.xml',
         'views/loai_van_ban.xml',

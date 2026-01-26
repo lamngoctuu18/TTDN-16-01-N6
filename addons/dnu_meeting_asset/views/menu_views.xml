@@ -317,5 +317,17 @@
                   action="action_ai_hr_wizard"
                   sequence="30"/>
 
+            <menuitem id="menu_ai_history"
+                          name="Lịch sử AI"
+                          parent="menu_dnu_ai"
+                          action="action_ai_request"
+                          sequence="40"/>
+
+            <menuitem id="menu_ai_sessions"
+                          name="Phiên AI"
+                          parent="menu_dnu_ai"
+                          action="action_ai_session"
+                          sequence="50"/>
+
     </data>
 </odoo>
