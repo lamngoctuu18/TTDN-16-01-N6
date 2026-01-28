@@ -19,6 +19,20 @@
 
 </div>
 
+---
+
+<div align="center">
+
+## 🎨 Project Poster
+
+<img src="poster/Posternhom1.png" alt="Platform ERP Poster" width="800"/>
+
+*📄 [Download PDF Version](poster/Posternhom1.pdf)*
+
+</div>
+
+---
+
 ## 📖 1. Giới thiệu
 
 > **Platform ERP thông minh** - Giải pháp toàn diện cho học phần Thực tập doanh nghiệp
