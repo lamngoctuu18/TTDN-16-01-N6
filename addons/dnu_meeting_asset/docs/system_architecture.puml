@@ -1,0 +1,162 @@
+@startuml
+title Kiến trúc Hệ thống Quản lý Doanh nghiệp
+
+skinparam defaultFontSize 13
+skinparam packageStyle rectangle
+skinparam roundcorner 10
+skinparam shadowing false
+
+' Màu sắc đơn giản
+skinparam package {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #757575
+    FontSize 12
+}
+
+skinparam database {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+}
+
+skinparam cloud {
+    BackgroundColor #F3E5F5
+    BorderColor #7B1FA2
+}
+
+' ========================
+' PRESENTATION LAYER
+' ========================
+package "🖥️ Tầng Giao diện" #E3F2FD {
+    [Views & Templates] as ui
+    [Controllers] as ctrl
+    [Wizards (AI, Booking)] as wizards
+}
+
+' ========================
+' BUSINESS LOGIC LAYER
+' ========================
+package "⚙️ Tầng Nghiệp vụ" #E8F5E9 {
+    
+    package "Module Nhân sự" #BBDEFB {
+        [Nhân viên & Đơn vị] as hrm
+    }
+    
+    package "Module Văn bản" #C8E6C9 {
+        [Văn bản đến/đi] as doc
+        [Task xử lý] as task
+    }
+    
+    package "Module Tài sản" #FFCCBC {
+        [Quản lý Tài sản] as asset
+        [Cấp phát & Bảo trì] as asset_ops
+    }
+    
+    package "Module Phòng họp" #B2DFDB {
+        [Phòng họp & Booking] as meeting
+        [Dashboard & Reports] as dashboard
+    }
+}
+
+' ========================
+' INTEGRATION LAYER
+' ========================
+package "🔌 Tầng Tích hợp" #F3E5F5 {
+    [OpenAI (AI Assistant)] as ai
+    [Google Calendar] as gcal
+    [Zoom & Jitsi] as video
+}
+
+' ========================
+' DATA LAYER
+' ========================
+database "💾 PostgreSQL Database" as db #FFF9C4
+
+' ========================
+' EXTERNAL SERVICES
+' ========================
+cloud "☁️ External APIs" as cloud #F3E5F5 {
+    [OpenAI API]
+    [Google API]
+    [Zoom API]
+}
+
+' ========================
+' RELATIONSHIPS - Chỉ các kết nối quan trọng
+' ========================
+
+' UI -> Controllers
+ui -down-> ctrl
+
+' Controllers -> Business Logic
+ctrl -down-> hrm
+ctrl -down-> doc
+ctrl -down-> asset
+ctrl -down-> meeting
+
+' Wizards -> Logic & Integration
+wizards -down-> meeting
+wizards -down-> ai
+
+' Cross-module relationships
+asset_ops -right-> hrm : gán cho nhân viên
+task -right-> hrm : phân công
+meeting -left-> hrm : người tổ chức
+
+' Integration connections
+ai -down-> cloud : API calls
+gcal -down-> cloud
+video -down-> cloud
+
+meeting -up-> ai : AI hỗ trợ
+meeting -up-> gcal : đồng bộ lịch
+meeting -up-> video : tạo link họp
+
+' Data persistence
+hrm -down-> db
+doc -down-> db
+asset -down-> db
+asset_ops -down-> db
+meeting -down-> db
+task -down-> db
+
+' ========================
+' NOTES - Chỉ thông tin quan trọng
+' ========================
+
+note right of ai
+  **AI Features:**
+  • Tạo Agenda tự động
+  • Tạo Biên bản cuộc họp
+  • Lịch sử AI tracking
+end note
+
+note right of meeting
+  **Booking Features:**
+  • Kiểm tra xung đột lịch
+  • Tích hợp Calendar/Zoom
+  • Phòng họp sự kiện
+  • Dashboard thống kê
+end note
+
+note bottom of asset
+  **Asset Lifecycle:**
+  Create → Assign → Maintain
+  → Transfer → Inventory → Dispose
+end note
+
+note bottom of db
+  **Dữ liệu chính:**
+  • HR (nhân viên, đơn vị, chức vụ)
+  • Documents (văn bản, task)
+  • Assets (tài sản, operations)
+  • Meetings (booking, rooms)
+end note
+
+@enduml

@@ -107,6 +107,7 @@ class AssetMaintenance(models.Model):
         'nhan_vien',
         string='Kỹ thuật viên',
         tracking=True,
+        domain="[('chuc_vu_chinh_id.ten_chuc_vu', '=', 'Kỹ Thuật Viên')]",
         help='Chọn kỹ thuật viên từ hệ thống Nhân sự'
     )
     tech_name = fields.Char(
@@ -291,7 +292,8 @@ class AssetMaintenance(models.Model):
     def action_start(self):
         """Bắt đầu xử lý"""
         for maintenance in self:
-            if not maintenance.assigned_tech_id:
+            # Kiểm tra cả 2 trường kỹ thuật viên
+            if not maintenance.assigned_tech_id and not maintenance.nhan_vien_ky_thuat_id:
                 raise ValidationError(_('Vui lòng chọn kỹ thuật viên!'))
             
             maintenance.write({

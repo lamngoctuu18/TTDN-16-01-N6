@@ -34,6 +34,10 @@ class NhanVien(models.Model):
                                         store=True
                                         )
     
+    # Liên kết với user của Odoo
+    user_id = fields.Many2one('res.users', string='Tài khoản người dùng', 
+                             help='Tài khoản Odoo liên kết với nhân viên này')
+    
     # Chức vụ và đơn vị hiện tại (từ lịch sử công tác loại "Chính")
     don_vi_chinh_id = fields.Many2one(
         'don_vi',

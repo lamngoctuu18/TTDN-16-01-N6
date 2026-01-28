@@ -41,26 +41,37 @@ class AssetSignatureWizard(models.TransientModel):
         if not self.signature:
             raise ValidationError(_('Vui lòng tải lên hoặc vẽ chữ ký!'))
         
-        # Lưu chữ ký vào biên bản
+        # Lưu chữ ký vào biên bản theo loại
         if self.signature_type == 'receiver':
             self.handover_id.write({
                 'receiver_signature': self.signature,
                 'receiver_signature_date': fields.Datetime.now(),
             })
-        else:
+            self.handover_id.message_post(
+                body=_('✅ Người nhận %s đã ký biên bản.') % (
+                    self.handover_id.nhan_vien_id.ho_va_ten if self.handover_id.nhan_vien_id else ''
+                ),
+                subject=_('Người nhận ký'),
+            )
+        elif self.signature_type == 'deliverer':
             self.handover_id.write({
                 'deliverer_signature': self.signature,
                 'deliverer_signature_date': fields.Datetime.now(),
             })
+            self.handover_id.message_post(
+                body=_('✅ Người giao %s đã ký biên bản.') % (
+                    self.handover_id.deliverer_id.ho_va_ten if self.handover_id.deliverer_id else ''
+                ),
+                subject=_('Người giao ký'),
+            )
         
-        # Cập nhật trạng thái nếu đã ký đủ
-        if self.handover_id.handover_type == 'return':
-            # Biên bản trả chỉ cần chữ ký người nhận
-            if self.handover_id.receiver_signature:
-                self.handover_id.state = 'signed'
+        # Kiểm tra nếu đủ chữ ký thì chuyển sang trạng thái signed
+        handover = self.handover_id
+        if handover.handover_type == 'return':
+            if handover.receiver_signature:
+                handover.state = 'signed'
         else:
-            # Biên bản gán/mượn cần cả hai chữ ký
-            if self.handover_id.receiver_signature and self.handover_id.deliverer_signature:
-                self.handover_id.state = 'signed'
+            if handover.receiver_signature and handover.deliverer_signature:
+                handover.state = 'signed'
         
         return {'type': 'ir.actions.act_window_close'}

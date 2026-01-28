@@ -244,6 +244,19 @@
                         <field name="purpose_note" placeholder="Chi tiết mục đích sử dụng..." attrs="{'readonly': [('state', '!=', 'draft')]}"/>
                         
                         <notebook>
+                            <page string="Chữ ký điện tử">
+                                <group>
+                                    <group string="Chữ ký người mượn">
+                                        <field name="borrower_signature" widget="image" class="oe_avatar"/>
+                                        <field name="borrower_signature_date" readonly="1"/>
+                                    </group>
+                                    <group string="Chữ ký người giao">
+                                        <field name="deliverer_signature" widget="image" class="oe_avatar"/>
+                                        <field name="deliverer_signature_date" readonly="1"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
                             <page string="Nhắc nhở trả tài sản">
                                 <group>
                                     <group>

@@ -52,51 +52,69 @@
                     
                     <templates>
                         <t t-name="kanban-box">
-                            <div class="oe_kanban_global_click o_kanban_record">
-                                <div class="o_kanban_record_top">
-                                    <div class="o_kanban_image">
-                                        <img t-att-src="kanban_image('dnu.asset', 'image', record.id.raw_value)" class="o_kanban_avatar" alt="asset"/>
-                                    </div>
-                                    <div class="o_kanban_record_title">
-                                        <strong><t t-esc="record.name.value"/></strong>
-                                    </div>
-                                    <div class="text-muted">
-                                        <i class="fa fa-barcode"/> <t t-esc="record.code.value"/>
-                                    </div>
-                                    <div>
-                                        <t t-if="record.state.value">
-                                            <span class="badge">
-                                                <t t-esc="record.state.value"/>
-                                            </span>
-                                        </t>
-                                    </div>
+                            <div class="oe_kanban_global_click o_kanban_card">
+                                <div class="o_kanban_image">
+                                    <img t-att-src="kanban_image('dnu.asset', 'image', record.id.raw_value)" alt="Asset"/>
                                 </div>
-
-                                <div class="o_kanban_record_body">
-                                    <div>
-                                        <span class="text-muted">Danh mục:</span>
-                                        <t t-esc="record.category_id.value"/>
+                                <div class="oe_kanban_details">
+                                    <div class="o_kanban_record_top">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                        <!-- Badge trạng thái với màu sắc -->
+                                        <span class="badge badge-pill" 
+                                              t-if="record.state and record.state.raw_value == 'available'" 
+                                              style="background-color: #28a745;">
+                                            <i class="fa fa-check"/> Sẵn sàng
+                                        </span>
+                                        <span class="badge badge-pill" 
+                                              t-elif="record.state and record.state.raw_value == 'assigned'" 
+                                              style="background-color: #17a2b8;">
+                                            <i class="fa fa-user"/> Đã cấp phát
+                                        </span>
+                                        <span class="badge badge-pill" 
+                                              t-elif="record.state and record.state.raw_value == 'maintenance'" 
+                                              style="background-color: #ffc107;">
+                                            <i class="fa fa-wrench"/> Bảo trì
+                                        </span>
+                                        <span class="badge badge-pill" 
+                                              t-elif="record.state and record.state.raw_value == 'disposed'" 
+                                              style="background-color: #6c757d;">
+                                            <i class="fa fa-trash"/> Đã thanh lý
+                                        </span>
+                                        <!-- Badge đang được mượn -->
+                                        <span class="badge badge-pill" 
+                                              t-if="record.is_borrowed.value" 
+                                              style="background-color: #dc3545;">
+                                            <i class="fa fa-exchange"/> Đang mượn
+                                        </span>
                                     </div>
-                                    <div>
-                                        <span class="text-muted">Vị trí:</span>
-                                        <t t-esc="record.location.value or 'Chưa có vị trí'"/>
-                                    </div>
-                                    <div t-if="record.assigned_nhan_vien_id.value">
-                                        <span class="text-muted">Người được gán:</span>
-                                        <t t-esc="record.assigned_nhan_vien_id.value"/>
-                                    </div>
-                                    <div t-if="record.is_borrowed.value" class="text-danger">
-                                        <div>Đang được mượn</div>
+                                    
+                                    <div class="o_kanban_record_body">
+                                        <div class="text-muted" style="font-size: 0.9em;">
+                                            <i class="fa fa-barcode"/> <field name="code"/>
+                                        </div>
                                         <div>
-                                            Người mượn: <t t-esc="record.current_borrower.value"/>
+                                            <i class="fa fa-folder-o" title="Danh mục"/> <field name="category_id"/>
+                                        </div>
+                                        <div t-if="record.location.value">
+                                            <i class="fa fa-map-marker" title="Vị trí"/> <field name="location"/>
+                                        </div>
+                                        <div t-if="record.assigned_nhan_vien_id.value">
+                                            <i class="fa fa-user-circle" title="Người được gán"/> 
+                                            <span class="text-muted">Gán cho:</span> <field name="assigned_nhan_vien_id"/>
+                                        </div>
+                                        <div t-if="record.is_borrowed.value and record.current_borrower.value" class="text-danger">
+                                            <i class="fa fa-hand-o-right"/> 
+                                            <span class="text-muted">Người mượn:</span> <t t-esc="record.current_borrower.value"/>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="o_kanban_record_bottom">
-                                    <div class="text-muted">Giá trị hiện tại</div>
-                                    <div>
-                                        <field name="current_value" widget="monetary"/>
+                                    
+                                    <div class="o_kanban_record_bottom">
+                                        <div class="oe_kanban_bottom_left">
+                                            <span class="text-muted" style="font-size: 0.85em;">Giá trị hiện tại:</span><br/>
+                                            <strong><field name="current_value" widget="monetary"/></strong>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -113,8 +131,8 @@
             <field name="arch" type="xml">
                 <form string="Tài sản">
                     <header>
-                        <button name="action_assign_to_employee" string="Gán cho nhân viên" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'available')]}"/>
-                        <button name="action_create_maintenance" string="Tạo yêu cầu bảo trì" type="object" class="btn-warning"/>
+                        <button name="action_assign_to_employee" string="🎯 Gán cho nhân viên" type="object" class="btn-primary" attrs="{'invisible': [('state', '!=', 'available')]}"/>
+                        <button name="action_create_maintenance" string="🔧 Tạo yêu cầu bảo trì" type="object" class="btn-warning"/>
                         <field name="state" widget="statusbar" statusbar_visible="available,assigned,maintenance,disposed"/>
                     </header>
                     <sheet>

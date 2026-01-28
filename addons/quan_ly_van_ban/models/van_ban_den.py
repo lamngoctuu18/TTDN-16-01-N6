@@ -389,9 +389,26 @@ class VanBanDen(models.Model):
                         # Cập nhật trực tiếp state thay vì gọi action_confirm để tránh vòng lặp check
                         source_record.write({'state': 'confirmed'})
                         
-                        # Tạo calendar event
+                        # Tạo calendar event (Odoo internal calendar)
                         if hasattr(source_record, '_create_calendar_event'):
                             source_record._create_calendar_event()
+                        
+                        # Tạo Google Calendar event
+                        if hasattr(source_record, '_create_google_calendar_event'):
+                            try:
+                                source_record._create_google_calendar_event()
+                                self.message_post(body='📅 Đã tạo sự kiện Google Calendar cho cuộc họp')
+                            except Exception as e:
+                                self.message_post(body='⚠️ Không thể tạo Google Calendar: %s' % str(e))
+                        
+                        # Tích hợp Zoom nếu là họp online
+                        if hasattr(source_record, 'meeting_type') and source_record.meeting_type == 'online':
+                            if hasattr(source_record, '_create_zoom_meeting'):
+                                try:
+                                    source_record._create_zoom_meeting()
+                                    self.message_post(body='🎥 Đã tạo cuộc họp Zoom')
+                                except Exception as e:
+                                    self.message_post(body='⚠️ Không thể tạo Zoom meeting: %s' % str(e))
                         
                         # Tạo phiếu mượn tài sản tự động cho các thiết bị được chọn
                         if hasattr(source_record, 'required_equipment_ids') and source_record.required_equipment_ids:
@@ -406,8 +423,12 @@ class VanBanDen(models.Model):
                         if hasattr(source_record, '_send_notification_emails'):
                             source_record._send_notification_emails()
                         
-                        source_record.message_post(body='Đặt phòng đã được xác nhận từ văn bản duyệt: %s' % self.ten_van_ban)
-                        self.message_post(body='✅ Đã xác nhận đặt phòng: %s' % source_record.name)
+                        source_record.message_post(body='✅ Đặt phòng đã được xác nhận và KÝ DUYỆT từ văn bản: %s' % self.ten_van_ban)
+                        self.message_post(body='✅ Đã xác nhận đặt phòng: %s\n🔗 Link Calendar: %s\n🔗 Link Google Calendar: %s' % (
+                            source_record.name,
+                            source_record.calendar_event_id.name if hasattr(source_record, 'calendar_event_id') and source_record.calendar_event_id else '-',
+                            source_record.google_calendar_link if hasattr(source_record, 'google_calendar_link') and source_record.google_calendar_link else '-'
+                        ))
                     except Exception as e:
                         self.message_post(body='❌ Lỗi khi xác nhận đặt phòng: %s' % str(e))
                 elif current_state == 'confirmed':
@@ -415,7 +436,7 @@ class VanBanDen(models.Model):
                 else:
                     self.message_post(body='⚠️ Trạng thái booking không phải "submitted" (hiện tại: %s)' % current_state)
             else:
-                # Từ chối booking
+                # Từ chối booking - Hủy và xóa calendar events
                 if hasattr(source_record, 'action_cancel'):
                     source_record.write({'cancellation_reason': self.approval_note or 'Bị từ chối bởi Ban Giám đốc'})
                     source_record.action_cancel()

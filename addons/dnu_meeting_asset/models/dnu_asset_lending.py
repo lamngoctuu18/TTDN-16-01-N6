@@ -248,6 +248,26 @@ class AssetLending(models.Model):
         readonly=True,
         store=False
     )
+    
+    # Chữ ký điện tử
+    borrower_signature = fields.Binary(
+        string='Chữ ký người mượn',
+        help='Chữ ký điện tử của người mượn tài sản',
+        attachment=True
+    )
+    borrower_signature_date = fields.Datetime(
+        string='Ngày ký (người mượn)',
+        readonly=True
+    )
+    deliverer_signature = fields.Binary(
+        string='Chữ ký người giao',
+        help='Chữ ký điện tử của người giao tài sản',
+        attachment=True
+    )
+    deliverer_signature_date = fields.Datetime(
+        string='Ngày ký (người giao)',
+        readonly=True
+    )
     return_handover_state = fields.Selection(
         related='return_handover_id.state',
         string='Trạng thái biên bản trả',
@@ -327,7 +347,8 @@ class AssetLending(models.Model):
     def action_request(self):
         """Gửi yêu cầu mượn và tạo biên bản nếu cần phê duyệt"""
         for lending in self:
-            if lending.asset_id.state != 'available':
+            # Cho phép mượn tài sản ở trạng thái available hoặc assigned (đã gán)
+            if lending.asset_id.state not in ['available', 'assigned']:
                 raise UserError(_('Tài sản "%s" hiện không khả dụng!') % lending.asset_id.name)
             
             # Nếu yêu cầu phê duyệt, chuyển sang pending_approval và tạo biên bản

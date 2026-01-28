@@ -1,0 +1,163 @@
+@startuml Kiến trúc Hệ thống Quản lý Doanh nghiệp
+!define RECTANGLE class
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam linetype ortho
+
+' Style definitions
+skinparam package {
+    BackgroundColor<<presentation>> #E3F2FD
+    BorderColor<<presentation>> #1976D2
+    BackgroundColor<<business>> #FFF9C4
+    BorderColor<<business>> #F57F17
+    BackgroundColor<<integration>> #F3E5F5
+    BorderColor<<integration>> #7B1FA2
+    BackgroundColor<<data>> #FFF3E0
+    BorderColor<<data>> #E65100
+    BackgroundColor<<external>> #F3E5F5
+    BorderColor<<external>> #9C27B0
+}
+
+skinparam component {
+    BackgroundColor<<hr>> #C8E6C9
+    BorderColor<<hr>> #388E3C
+    BackgroundColor<<document>> #BBDEFB
+    BorderColor<<document>> #1976D2
+    BackgroundColor<<asset>> #FFCCBC
+    BorderColor<<asset>> #E64A19
+    BackgroundColor<<meeting>> #B2DFDB
+    BorderColor<<meeting>> #00796B
+    BackgroundColor<<ai>> #E1BEE7
+    BorderColor<<ai>> #7B1FA2
+}
+
+' ==== TẦNG GIAO DIỆN ====
+package "Tầng Giao diện" <<presentation>> {
+    component [Views & Templates] as views #E3F2FD
+    component [Wizards\n(AI, Booking)] as wizards #E3F2FD
+    component [Controllers] as controllers #E3F2FD
+    
+    views -down-> controllers
+    wizards -down-> controllers
+}
+
+' ==== TẦNG NGHIỆP VỤ ====
+package "Tầng Nghiệp vụ" <<business>> {
+    
+    ' Module Nhân sự
+    package "Module Nhân sự" <<hr>> {
+        component [Nhân viên & Đơn vị] as hr_module #C8E6C9
+        component [Phân công] as hr_assign #C8E6C9
+        
+        hr_module -[hidden]right- hr_assign
+    }
+    
+    ' Module Văn bản
+    package "Module Văn bản" <<document>> {
+        component [Task xử lý] as task #BBDEFB
+        component [Văn bản đến/đi] as doc #BBDEFB
+        
+        task -[hidden]right- doc
+    }
+    
+    ' Module Tài sản
+    package "Module Tài sản" <<asset>> {
+        component [Cấp phát & Bảo trì] as asset_assign #FFCCBC
+        component [Quản lý Tài sản] as asset_manage #FFCCBC
+        
+        asset_assign -[hidden]right- asset_manage
+    }
+    
+    ' Module Phòng họp
+    package "Module Phòng họp" <<meeting>> {
+        component [Phòng họp & Booking] as meeting #B2DFDB
+        component [Dashboard & Reports] as dashboard #B2DFDB
+        
+        meeting -[hidden]right- dashboard
+    }
+}
+
+' ==== TẦNG TÍCH HỢP ====
+package "Tầng Tích hợp" <<integration>> {
+    component [Zoom & Jitsi] as zoom #E1BEE7
+    component [Google Calendar] as gcal #E1BEE7
+    component [OpenAI\n(AI Assistant)] as openai #E1BEE7
+    
+    zoom -[hidden]right- gcal
+    gcal -[hidden]right- openai
+}
+
+' ==== EXTERNAL APIs ====
+cloud "External APIs" <<external>> {
+    interface [OpenAI API] as openai_api
+    interface [Google API] as google_api
+    interface [Zoom API] as zoom_api
+    
+    openai_api -[hidden]right- google_api
+    google_api -[hidden]right- zoom_api
+}
+
+' ==== DATABASE ====
+database "PostgreSQL Database" as db {
+    storage "Asset Lifecycle:\n• Create → Assign → Maintain\n• Transfer → Inventory → Dispose" as lifecycle
+    
+    storage "Dữ liệu chính:\n• HR (nhân viên, đơn vị, chức vụ)\n• Documents (văn bản, task)\n• Assets (tài sản, operations)\n• Meetings (booking, rooms)" as data
+    
+    lifecycle -[hidden]down- data
+}
+
+' ==== AI FEATURES BOX ====
+note right of openai #FFFDE7
+**AI Features:**
+• Tạo bánh sự từ dụng
+• Tổng hợp cuộc họp
+• Lịch sử AI tracking
+end note
+
+note right of zoom_api #E8F5E9
+**Booking Features:**
+• Kiểm tra xung đột
+• Nhắc nhở tự động
+• Phòng họp sử dụng
+• Dashboard thống kê
+end note
+
+' ==== RELATIONSHIPS - Presentation to Business ====
+controllers -down-> hr_module : "người tổ chức gán cho nhân viên"
+controllers -down-> task
+controllers -down-> doc
+controllers -down-> asset_assign
+controllers -down-> asset_manage
+controllers -down-> meeting
+controllers -down-> dashboard
+
+' ==== RELATIONSHIPS - Business to Integration ====
+meeting -up-> zoom : "tạo link họp"
+meeting -up-> gcal : "đồng bộ lịch"
+dashboard -up-> openai : "AI hỗ trợ"
+
+' ==== RELATIONSHIPS - Integration to External ====
+openai -up-> openai_api : "API Calls"
+gcal -up-> google_api : "API Calls"
+zoom -up-> zoom_api : "API Calls"
+
+' ==== RELATIONSHIPS - Business to Database ====
+hr_module -down-> db
+hr_assign -down-> db
+task -down-> db
+doc -down-> db
+asset_assign -down-> db
+asset_manage -down-> db
+meeting -down-> db
+dashboard -down-> db
+
+' ==== CROSS-MODULE RELATIONSHIPS ====
+hr_module .right.> doc : "phân công"
+task .right.> asset_manage : "task xử lý"
+asset_assign .right.> meeting : "tài sản phòng họp"
+
+@enduml

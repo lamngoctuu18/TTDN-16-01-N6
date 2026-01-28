@@ -123,9 +123,6 @@ Phát triển bởi: Nhóm Sinh viên FIT-DNU
         'views/dnu_meeting_room_views.xml',
         'views/dnu_meeting_booking_views.xml',
 
-        # Views - Văn bản đến (integration)
-        'views/van_ban_den_inherit_views.xml',
-
         # Views - User guide
         'views/user_guide_views.xml',
         

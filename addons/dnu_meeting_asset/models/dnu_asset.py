@@ -374,8 +374,10 @@ class Asset(models.Model):
             has_assignee = asset.assigned_to or asset.assigned_nhan_vien_id
             if asset.state == 'assigned' and not has_assignee:
                 raise ValidationError(_('Tài sản ở trạng thái "Đã gán" phải có nhân viên được gán.'))
-            if asset.state != 'assigned' and has_assignee:
-                raise ValidationError(_('Chỉ tài sản ở trạng thái "Đã gán" mới có thể gán cho nhân viên.'))
+            # Chỉ kiểm tra nếu đang ở trạng thái available (sẵn sàng) mà có người gán thì báo lỗi
+            # Các trạng thái khác như maintenance, disposed có thể vẫn giữ thông tin người gán
+            if asset.state == 'available' and has_assignee:
+                raise ValidationError(_('Tài sản ở trạng thái "Sẵn sàng" không thể có người được gán.'))
     
     _sql_constraints = [
         ('code_unique', 'unique(code)', 'Mã tài sản phải là duy nhất!'),

@@ -850,16 +850,29 @@ class MeetingBooking(models.Model):
             ], limit=1)
             
             if pending_van_ban:
-                # Cập nhật văn bản đến thành đã duyệt
+                # Lấy người duyệt hiện tại
+                current_user = self.env.user
+                approver = self.env['nhan_vien'].search([
+                    ('user_id', '=', current_user.id)
+                ], limit=1) or pending_van_ban.approver_id
+                
+                # Cập nhật văn bản đến thành đã duyệt với chữ ký
                 pending_van_ban.write({
                     'approval_state': 'approved',
                     'approval_date': fields.Datetime.now(),
+                    'signer_employee_id': approver.id if approver else False,
+                    'signature_date': fields.Datetime.now(),
                 })
+                
+                # Tạo văn bản đi phản hồi
                 pending_van_ban._create_van_ban_di_response()
+                
+                # Thông báo cho người yêu cầu
                 pending_van_ban._notify_requester(approved=True)
-                pending_van_ban.message_post(body=_('Đã được duyệt từ trang Duyệt đặt phòng bởi %s') % self.env.user.name)
+                
+                pending_van_ban.message_post(body=_('✅ Đã được DUYỆT và KÝ từ trang Duyệt đặt phòng bởi %s') % self.env.user.name)
             
-            # Xác nhận booking
+            # Xác nhận booking với context để bỏ qua check văn bản
             booking.with_context(from_van_ban_approval=True).action_confirm()
         
         return {
@@ -867,7 +880,7 @@ class MeetingBooking(models.Model):
             'tag': 'display_notification',
             'params': {
                 'title': _('Thành công'),
-                'message': _('Đã duyệt %s lịch đặt phòng') % len(self),
+                'message': _('Đã duyệt %s lịch đặt phòng. Calendar và Google Calendar đã được cập nhật.') % len(self),
                 'type': 'success',
                 'sticky': False,
             }
@@ -888,14 +901,21 @@ class MeetingBooking(models.Model):
             ], limit=1)
             
             if pending_van_ban:
+                # Lấy người duyệt hiện tại
+                current_user = self.env.user
+                approver = self.env['nhan_vien'].search([
+                    ('user_id', '=', current_user.id)
+                ], limit=1) or pending_van_ban.approver_id
+                
                 # Cập nhật văn bản đến thành từ chối
                 pending_van_ban.write({
                     'approval_state': 'rejected',
                     'approval_date': fields.Datetime.now(),
-                    'approval_note': 'Từ chối từ trang Duyệt đặt phòng',
+                    'approval_note': 'Từ chối từ trang Duyệt đặt phòng bởi ' + self.env.user.name,
+                    'signer_employee_id': approver.id if approver else False,
                 })
                 pending_van_ban._notify_requester(approved=False)
-                pending_van_ban.message_post(body=_('Đã bị từ chối từ trang Duyệt đặt phòng bởi %s') % self.env.user.name)
+                pending_van_ban.message_post(body=_('❌ Đã bị TỪ CHỐI từ trang Duyệt đặt phòng bởi %s') % self.env.user.name)
             
             # Hủy booking
             booking.write({

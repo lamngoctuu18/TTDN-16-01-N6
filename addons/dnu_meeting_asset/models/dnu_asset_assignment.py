@@ -255,13 +255,10 @@ class AssetAssignment(models.Model):
             if not (assignment.employee_id or assignment.nhan_vien_id):
                 raise ValidationError(_('Vui lòng chọn nhân viên (HR hoặc Nhân sự) trước khi xác nhận.'))
 
-            # Bắt buộc phải có biên bản bàn giao đã hoàn thành
-            if not assignment.handover_id:
-                raise UserError(_('Bắt buộc tạo Biên bản bàn giao trước khi xác nhận gán.'))
-            if assignment.handover_id.handover_type != 'assignment' or assignment.handover_id.assignment_id != assignment:
-                raise UserError(_('Biên bản bàn giao liên kết không đúng với phiếu gán này.'))
-            if assignment.handover_id.state != 'completed':
-                raise UserError(_('Biên bản bàn giao phải được ký và Hoàn thành trước khi xác nhận gán.'))
+            # Kiểm tra biên bản bàn giao nếu có
+            if assignment.handover_id:
+                if assignment.handover_id.state != 'completed':
+                    raise UserError(_('Biên bản bàn giao phải được ký và Hoàn thành trước khi xác nhận gán.'))
 
             if assignment.asset_id.state not in ['available', 'assigned']:
                 raise ValidationError(
@@ -298,6 +295,20 @@ class AssetAssignment(models.Model):
         receiver = self.nhan_vien_id or (self.employee_id.nhan_vien_id if self.employee_id else False)
         if not receiver:
             raise UserError(_('Vui lòng chọn Nhân viên (Nhân sự) để tạo biên bản.'))
+        
+        # Tìm người đang được gán tài sản hiện tại làm người giao
+        current_holder = False
+        if self.asset_id.assigned_nhan_vien_id:
+            current_holder = self.asset_id.assigned_nhan_vien_id
+        else:
+            # Tìm từ assignment active
+            current_assignment = self.env['dnu.asset.assignment'].search([
+                ('asset_id', '=', self.asset_id.id),
+                ('state', '=', 'active'),
+                ('id', '!=', self.id),
+            ], limit=1)
+            if current_assignment and current_assignment.nhan_vien_id:
+                current_holder = current_assignment.nhan_vien_id
 
         # Tạo biên bản bàn giao
         handover = self.env['dnu.asset.handover'].create({
@@ -305,6 +316,7 @@ class AssetAssignment(models.Model):
             'assignment_id': self.id,
             'asset_id': self.asset_id.id,
             'nhan_vien_id': receiver.id,
+            'deliverer_id': current_holder.id if current_holder else False,
             'handover_date': fields.Datetime.now(),
             'condition_handover': 'good',
         })

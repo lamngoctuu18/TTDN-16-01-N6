@@ -168,8 +168,7 @@
                                 <field name="nhan_vien_ky_thuat_id" 
                                        string="Kỹ thuật viên" 
                                        options="{'no_quick_create': True}" 
-                                       placeholder="Chọn kỹ thuật viên"
-                                       domain="[('don_vi_chinh_id.ten_don_vi', '=', 'Bảo Trì')]"/>
+                                       placeholder="Chọn kỹ thuật viên"/>
                             </group>
                             <group string="Lịch trình">
                                 <field name="date_scheduled"/>

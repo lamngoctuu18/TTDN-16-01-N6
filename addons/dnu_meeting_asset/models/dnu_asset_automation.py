@@ -1045,8 +1045,8 @@ class AssetTransferAutomation(models.Model):
             self.name,
             self.handover_date or fields.Date.today(),
             self.asset_id.name, self.asset_id.code,
-            self.from_employee_id.name if self.from_employee_id else self.from_location or 'N/A',
-            self.to_employee_id.name if self.to_employee_id else self.to_location or 'N/A',
+            self.from_employee_id.ho_va_ten if self.from_employee_id else self.from_location or 'N/A',
+            self.to_employee_id.ho_va_ten if self.to_employee_id else self.to_location or 'N/A',
             dict(self._fields['condition_after'].selection).get(self.condition_after) if self.condition_after else 'N/A',
             dict(self._fields['reason'].selection).get(self.reason),
         )

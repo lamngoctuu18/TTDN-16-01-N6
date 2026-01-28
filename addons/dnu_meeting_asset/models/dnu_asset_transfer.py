@@ -40,12 +40,12 @@ class AssetTransfer(models.Model):
     
     # From
     from_employee_id = fields.Many2one(
-        'hr.employee',
+        'nhan_vien',
         string='Từ nhân viên',
         tracking=True
     )
     from_department_id = fields.Many2one(
-        'hr.department',
+        'don_vi',
         string='Từ phòng ban',
         tracking=True
     )
@@ -56,12 +56,12 @@ class AssetTransfer(models.Model):
     
     # To
     to_employee_id = fields.Many2one(
-        'hr.employee',
+        'nhan_vien',
         string='Đến nhân viên',
         tracking=True
     )
     to_department_id = fields.Many2one(
-        'hr.department',
+        'don_vi',
         string='Đến phòng ban',
         tracking=True
     )
@@ -87,17 +87,17 @@ class AssetTransfer(models.Model):
         tracking=True
     )
     handover_by = fields.Many2one(
-        'hr.employee',
+        'nhan_vien',
         string='Người bàn giao',
         tracking=True
     )
     received_by = fields.Many2one(
-        'hr.employee',
+        'nhan_vien',
         string='Người nhận',
         tracking=True
     )
     witness_ids = fields.Many2many(
-        'hr.employee',
+        'nhan_vien',
         'transfer_witness_rel',
         'transfer_id',
         'employee_id',
@@ -212,8 +212,8 @@ class AssetTransfer(models.Model):
     def _onchange_asset_id(self):
         """Tự động điền thông tin hiện tại của tài sản"""
         if self.asset_id:
-            self.from_employee_id = self.asset_id.assigned_to
-            self.from_department_id = self.asset_id.assigned_to.department_id if self.asset_id.assigned_to else False
+            self.from_employee_id = self.asset_id.assigned_nhan_vien_id
+            self.from_department_id = self.asset_id.assigned_nhan_vien_id.don_vi_chinh_id if self.asset_id.assigned_nhan_vien_id else False
             self.from_location = self.asset_id.location
 
     @api.onchange('transfer_type')
@@ -333,14 +333,16 @@ class AssetTransfer(models.Model):
         vals = {}
         
         if self.transfer_type == 'employee':
-            vals['assigned_to'] = self.to_employee_id.id
+            vals['assigned_nhan_vien_id'] = self.to_employee_id.id
+            vals['assigned_to'] = False  # Clear hr.employee assignment since using custom HR
             vals['assignment_date'] = fields.Date.today()
-            if self.to_employee_id.department_id:
-                vals['location'] = self.to_employee_id.department_id.name
+            if self.to_employee_id.don_vi_chinh_id:
+                vals['location'] = self.to_employee_id.don_vi_chinh_id.ten_don_vi
         
         elif self.transfer_type == 'department':
-            vals['assigned_to'] = False  # Không gán cho ai
-            vals['location'] = self.to_department_id.name
+            vals['assigned_nhan_vien_id'] = False  # Không gán cho ai
+            vals['assigned_to'] = False  # Clear hr.employee assignment
+            vals['location'] = self.to_department_id.ten_don_vi
         
         elif self.transfer_type == 'location':
             vals['location'] = self.to_location
@@ -362,14 +364,14 @@ class AssetTransfer(models.Model):
         ])
         old_assignments.write({
             'state': 'returned',
-            'return_date': fields.Date.today(),
+            'date_to': fields.Date.today(),
         })
         
         # Tạo assignment mới
         self.env['dnu.asset.assignment'].create({
             'asset_id': self.asset_id.id,
-            'employee_id': self.to_employee_id.id,
-            'assignment_date': fields.Date.today(),
+            'nhan_vien_id': self.to_employee_id.id,
+            'date_from': fields.Date.today(),
             'state': 'active',
             'notes': _('Được tạo từ luân chuyển %s') % self.name,
         })
