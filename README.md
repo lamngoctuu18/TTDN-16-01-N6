@@ -4,7 +4,7 @@
     </a>
 </h2>
 <h2 align="center">
-    PLATFORM ERP
+    HỆ THỐNG QUẢN LÝ TÀI SẢN VÀ PHÒNG HỌP
 </h2>
 <div align="center">
     <p align="center">
@@ -25,9 +25,8 @@
 
 ## 🎨 Project Poster
 
-<img src="poster/Posternhom1.png" alt="Platform ERP Poster" width="800"/>
+<img width="535" height="776" alt="image" src="https://github.com/user-attachments/assets/4e5b167a-560b-4ad3-999b-8614aaa665b3" />
 
-*📄 [Download PDF Version](poster/Posternhom1.pdf)*
 
 </div>
 
